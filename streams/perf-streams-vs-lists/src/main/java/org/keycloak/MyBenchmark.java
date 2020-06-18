@@ -34,38 +34,121 @@ package org.keycloak;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
-import java.util.concurrent.TimeUnit;
+import org.openjdk.jmh.annotations.Param;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.annotations.Mode;
-import org.keycloak.JsonSerialization;
 import org.keycloak.representations.idm.RoleRepresentation;
 
 import java.io.IOException;
-import java.util.*;
-import java.util.Random;
-import java.util.stream.Collectors;
+import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-@BenchmarkMode(Mode.AverageTime)
-@OutputTimeUnit(TimeUnit.NANOSECONDS)
+@BenchmarkMode(Mode.Throughput)
+@OutputTimeUnit(TimeUnit.SECONDS)
+@Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
+@State(Scope.Benchmark)
 public class MyBenchmark {
 
-    @Benchmark
-    public void testStream() throws IOException {
-        Random r = new Random();
-        Stream<RoleRepresentation> s = Stream.generate(() -> new RoleRepresentation("role " + r.nextInt(), "description", true)).limit(1000);
+    @Param({"10", "100", "1000", "20000"})
+    public int size;
 
-        JsonSerialization.prettyMapper.writeValue(System.out, s);
+    private static AtomicInteger COUNTER = new AtomicInteger();
+
+    public OutputStream devNull = new OutputStream() {
+        @Override public void write(byte[] b, int off, int len) throws IOException { }
+        @Override public void write(byte[] b) throws IOException { }
+        @Override public void write(int b) throws IOException { }
+    };
+
+    private static RoleRepresentation getNewRole() {
+        return new RoleRepresentation("role " + COUNTER.incrementAndGet(), "description", true);
+    }
+
+    private void writeJson(Object o) {
+        try {
+            JsonSerialization.prettyMapper.writeValue(devNull, o);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     @Benchmark
-    public void testList() throws IOException {
-        Random r = new Random();
-        List<RoleRepresentation> list = new ArrayList<>();
+    public void streamStaticReference() {
+        Stream<RoleRepresentation> s = Stream.generate(MyBenchmark::getNewRole).limit(size);
+        writeJson(s);
+    }
 
-        for (int i = 0; i < 1000; i++) {
-            list.add(new RoleRepresentation("role " + r.nextInt(), "description", true));
+    @Benchmark
+    public void streamLambda() {
+        Stream<RoleRepresentation> s = Stream.generate(() -> new RoleRepresentation("role " + COUNTER.incrementAndGet(), "description", true)).limit(size);
+        writeJson(s);
+    }
+
+    @Benchmark
+    public void list() {
+        List<RoleRepresentation> list = new LinkedList<>();
+        for (int i = 0; i < size; i++) {
+            list.add(getNewRole());
         }
+        writeJson(list);
+    }
 
-        JsonSerialization.prettyMapper.writeValue(System.out, list);
+    @Benchmark
+    public void parallelStreamStaticReference() throws InterruptedException, ExecutionException {
+        ExecutorService es = Executors.newFixedThreadPool(5);
+        List<Future<Object>> f = es.invokeAll(Arrays.asList(
+          Executors.callable(this::streamStaticReference),
+          Executors.callable(this::streamStaticReference),
+          Executors.callable(this::streamStaticReference),
+          Executors.callable(this::streamStaticReference),
+          Executors.callable(this::streamStaticReference)
+        ));
+        es.shutdown();
+        for (Future<Object> future : f) {
+            future.get();
+        }
+    }
+
+    @Benchmark
+    public void parallelStreamLambda() throws InterruptedException, ExecutionException {
+        ExecutorService es = Executors.newFixedThreadPool(5);
+        List<Future<Object>> f = es.invokeAll(Arrays.asList(
+          Executors.callable(this::streamLambda),
+          Executors.callable(this::streamLambda),
+          Executors.callable(this::streamLambda),
+          Executors.callable(this::streamLambda),
+          Executors.callable(this::streamLambda)
+        ));
+        es.shutdown();
+        for (Future<Object> future : f) {
+            future.get();
+        }
+    }
+
+    @Benchmark
+    public void parallelList() throws InterruptedException, ExecutionException {
+        ExecutorService es = Executors.newFixedThreadPool(5);
+        List<Future<Object>> f = es.invokeAll(Arrays.asList(
+          Executors.callable(this::list),
+          Executors.callable(this::list),
+          Executors.callable(this::list),
+          Executors.callable(this::list),
+          Executors.callable(this::list)
+        ));
+        es.shutdown();
+        for (Future<Object> future : f) {
+            future.get();
+        }
     }
 }
