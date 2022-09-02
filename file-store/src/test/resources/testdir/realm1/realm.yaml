@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=../../schema/v1/file/realm.yaml
+
+version: 1
+
+name: name
+attributes:
+  a: '11'
+  b: 
+    - aa
+    - bb
+    - bb
+
+clients: $glob:clients/*.yaml
+
+groups:
+  admin:
+  user:
+
+users:
+  user1:
+    groups: [ admin, user ]
+

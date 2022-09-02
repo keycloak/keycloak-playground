@@ -1,0 +1,15 @@
+# yaml-language-server: https://json-schema.org/draft/2019-09/schema
+
+$id: https://keycloak.org/schema/v1/file/common
+$schema: https://json-schema.org/draft/2019-09/schema
+
+$defs:
+  Map-String-Set-String--:
+    type: object
+    additionalProperties: 
+      oneOf:
+      - type: string
+      - type: array
+        items:
+          type: string
+        uniqueItems: true

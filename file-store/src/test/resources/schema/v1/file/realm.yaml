@@ -1,0 +1,15 @@
+# yaml-language-server: https://json-schema.org/draft/2019-09/schema
+
+$id: https://keycloak.org/schema/v1/file/realm
+$schema: https://json-schema.org/draft/2019-09/schema
+
+type: object
+title: Keycloak Realm Schema
+description: Keycloak 
+properties: 
+  version: { type: number, required: true }
+  id: { type: string, $comment: "ID of the realm" }
+  name: { type: string }
+  attributes: { $ref: 'common.yaml#/$defs/Map-String-Set-String--' }
+
+additionalProperties: false
