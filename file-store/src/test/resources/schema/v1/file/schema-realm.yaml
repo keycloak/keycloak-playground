@@ -7,9 +7,12 @@ type: object
 title: Keycloak Realm Schema
 description: Keycloak 
 properties: 
-  version: { type: number, required: true }
+  version: { type: number }
   id: { type: string, $comment: "ID of the realm" }
   name: { type: string }
   attributes: { $ref: 'common.yaml#/$defs/Map-String-Set-String--' }
+  components:
+    type: object
 
+required: [ 'version' ]
 additionalProperties: false

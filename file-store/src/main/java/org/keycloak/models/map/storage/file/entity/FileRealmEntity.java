@@ -8,9 +8,12 @@ import org.keycloak.models.map.storage.file.annotations.IdSubstituteWhenIdMissin
 public interface FileRealmEntity extends MapRealmEntity {
 
     @Override
-    @IdSubstituteWhenIdMissing
     @Required
     String getName();
+    
+    @Override
+    @DefaultFrom("name")
+    String getId();
 
 
     @Type("common.yaml#/$defs/Map-String-Set-String--")

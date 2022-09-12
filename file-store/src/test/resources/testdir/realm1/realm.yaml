@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=../../schema/v1/file/realm.yaml
+# yaml-language-server: $schema=../../schema/v1/file/schema-realm.yaml
 
 version: 1
 
@@ -8,7 +8,25 @@ attributes:
   b: 
     - aa
     - bb
-    - bb
+
+components:
+  c1: 
+    providerId: xyz
+    aa: aa
+    bb: bb
+
+realmKeys: ## i.e. components/*/providerType = org.keycloak.keys.KeyProvider
+  sig:  # components/*/config[use=sig]
+    providerId: rsa
+    private-key: AAA...ZZZ
+    public-key: AAA...ZZZ
+    certificate: AAA...ZZZ
+  enc:
+    providerId: rsa
+    private-key: AAA...ZZZ
+    public-key: AAA...ZZZ
+    certificate: AAA...ZZZ
+
 
 clients: $glob:clients/*.yaml
 
