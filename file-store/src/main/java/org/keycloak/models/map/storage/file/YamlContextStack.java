@@ -23,7 +23,7 @@ import java.util.function.Supplier;
  *
  * @author hmlnarik
  */
-public class YamlContextStack extends LinkedList<YamlContext<?>> {
+class YamlContextStack extends LinkedList<YamlContext<?>> {
 
     public YamlContextStack(YamlContext<?> rootElement) {
         push(rootElement);

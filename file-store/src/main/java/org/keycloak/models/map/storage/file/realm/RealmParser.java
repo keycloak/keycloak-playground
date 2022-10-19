@@ -14,23 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.keycloak.models.map.storage.file.entity;
+package org.keycloak.models.map.storage.file.realm;
 
-import org.keycloak.models.map.storage.file.RealmParser;
-import java.io.FileNotFoundException;
-import org.junit.jupiter.api.Test;
+import java.io.InputStream;
+import org.keycloak.models.map.storage.file.YamlContextAwareParser;
+import org.keycloak.models.map.storage.file.entity.FileRealmEntity;
+import org.keycloak.models.map.storage.file.realm.RealmYamlContext;
 
 /**
  *
  * @author hmlnarik
  */
-public class RealmParserTest {
+public class RealmParser {
 
-    @Test
-    public void testEventProcessing() throws FileNotFoundException {
-        RealmParser p = new RealmParser();
-        FileRealmEntity v = p.parseLowLevel(getClass().getResourceAsStream("/testdir/realm1/realm.yaml"));
-        System.out.println(v);
+    public FileRealmEntity parseLowLevel(InputStream is) {
+        return YamlContextAwareParser.parse(is, new RealmYamlContext());
     }
-
 }
