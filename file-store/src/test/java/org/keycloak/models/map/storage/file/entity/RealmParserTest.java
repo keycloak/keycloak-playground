@@ -27,12 +27,6 @@ import org.junit.jupiter.api.Test;
 public class RealmParserTest {
 
     @Test
-    public void testSomeMethod() throws FileNotFoundException {
-        RealmParser p = new RealmParser();
-        p.parse(getClass().getResourceAsStream("/testdir/realm1/realm.yaml"));
-    }
-
-    @Test
     public void testEventProcessing() throws FileNotFoundException {
         RealmParser p = new RealmParser();
         FileRealmEntity v = p.parseLowLevel(getClass().getResourceAsStream("/testdir/realm1/realm.yaml"));
