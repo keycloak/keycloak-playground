@@ -15,26 +15,14 @@ components:
     aa: aa
     bb: bb
 
-realmKeys: ## i.e. components/*/providerType = org.keycloak.keys.KeyProvider
+keys: ## i.e. components/*/providerType = org.keycloak.keys.KeyProvider
   sig:  # components/*/config[use=sig]
-    providerId: rsa
-    private-key: AAA...ZZZ
-    public-key: AAA...ZZZ
+  - providerId: rsa
+    privateKey: AAA...ZZZ
+    publicKey: AAA...ZZZ
     certificate: AAA...ZZZ
   enc:
-    providerId: rsa
-    private-key: AAA...ZZZ
-    public-key: AAA...ZZZ
+  - providerId: rsa
+    privateKey: AAA...ZZZ
+    publicKey: AAA...ZZZ
     certificate: AAA...ZZZ
-
-
-clients: $glob:clients/*.yaml
-
-groups:
-  admin:
-  user:
-
-users:
-  user1:
-    groups: [ admin, user ]
-

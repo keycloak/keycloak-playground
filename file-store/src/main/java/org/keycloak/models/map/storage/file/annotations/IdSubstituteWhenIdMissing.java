@@ -7,5 +7,5 @@ package org.keycloak.models.map.storage.file.annotations;
 public @interface IdSubstituteWhenIdMissing {
     int priority() default 1;
 
-    Class<? extends ValueTransformer<?>> valueTransformer() default ValueTransformer.class;
+    Class<? extends ValueTransformer<?>> valueTransformer();
 }

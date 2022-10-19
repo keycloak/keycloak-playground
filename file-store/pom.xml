@@ -16,7 +16,20 @@
     <packaging>jar</packaging>
     
     <name>Proposal for 0-downtime file storage</name>
-    
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.0</version>
+                <configuration>
+                    <systemPropertyVariables>
+                        <log4j.configurationFile>${project.build.directory}/test-classes/log4j.properties</log4j.configurationFile>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
     <dependencies>
         <dependency>
             <groupId>org.keycloak</groupId>
@@ -49,6 +62,12 @@
             <artifactId>commons-lang3</artifactId>
             <version>3.11</version>
             <type>jar</type>
+        </dependency>
+        
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.17</version>
         </dependency>
     </dependencies>
     

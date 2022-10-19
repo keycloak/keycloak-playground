@@ -5,7 +5,6 @@ $schema: https://json-schema.org/draft/2019-09/schema
 
 type: object
 title: Keycloak Realm Schema
-description: Keycloak 
 properties: 
   version: { type: number }
   id: { type: string, $comment: "ID of the realm" }
