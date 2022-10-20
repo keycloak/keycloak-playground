@@ -1,8 +1,9 @@
 # yaml-language-server: $schema=../../schema/v1/file/schema-realm.yaml
 
-version: 1
+schemaVersion: 1
 
 name: name
+displayName: This is a display name
 attributes:
   a: '11'
   b: 
@@ -15,14 +16,17 @@ components:
     aa: aa
     bb: bb
 
-keys: ## i.e. components/*/providerType = org.keycloak.keys.KeyProvider
-  sig:  # components/*/config[use=sig]
-  - providerId: rsa
+browserHeaders:
+  X-Debug: 1
+  X-Keycloak: 19.0.3
+
+keys: ## SPI, i.e. components/*/providerType = org.keycloak.keys.KeyProvider
+  rsa:  # provider/providerId
+  - keyUse: sig
     privateKey: AAA...ZZZ
     publicKey: AAA...ZZZ
     certificate: AAA...ZZZ
-  enc:
-  - providerId: rsa
+  - keyUse: enc
     privateKey: AAA...ZZZ
     publicKey: AAA...ZZZ
     certificate: AAA...ZZZ

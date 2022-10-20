@@ -16,6 +16,7 @@
  */
 package org.keycloak.models.map.storage.file.realm;
 
+import org.keycloak.models.map.realm.MapRealmEntity;
 import org.keycloak.models.map.realm.entity.MapComponentEntity;
 import org.keycloak.models.map.realm.entity.MapComponentEntityImpl;
 import org.keycloak.models.map.storage.file.YamlContext.DefaultListContext;
@@ -31,14 +32,32 @@ import java.util.stream.Collectors;
  */
 public class ComponentsYamlContext extends DefaultListContext {
 
+    /**
+     * Adds a new component whose representation in YAML is a map where
+     * ID is the map {@code key} and {@code value} contains component description.
+     * <p>
+     *
+     * Note however that {@link MapRealmEntity#getComponents()} is a <i>collection</i>, not a map.
+     * <p>
+     * For that reason, this context class is a <i>collection</i> context
+     * (see the ancestor: {@link DefaultListContext}).
+     * 
+     * The translation from map entry into list elements happens at the end of this method,
+     * where {@link #add(Object)} is used to record new {@link MapComponentEntity} object.
+     */
+
     @Override
     public void add(String name, Object value) {
+        if (value instanceof List) {
+            List<?> lValue = (List<?>) value;
+            lValue.forEach(this::add);
+        }
         if (! (value instanceof Map)) {
             throw new IllegalStateException("Invalid format of " + "components" + " element");
         }
         Map<String, Object> mValue = (Map<String, Object>) value;
 
-        MapComponentEntity res = new MapComponentEntityImpl();
+        MapComponentEntity res = createComponent();
 
         Map<String, List<String>> config = new HashMap<>();
         res.setId(name);
@@ -71,6 +90,11 @@ public class ComponentsYamlContext extends DefaultListContext {
         // while the internal representation is a List of MapComponentEntity objects.
 
         super.add(res);
+    }
+
+    protected MapComponentEntity createComponent() {
+        MapComponentEntity res = new MapComponentEntityImpl();
+        return res;
     }
 
 }

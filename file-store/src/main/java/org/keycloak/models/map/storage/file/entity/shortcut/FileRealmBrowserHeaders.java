@@ -1,6 +1,7 @@
 package org.keycloak.models.map.storage.file.entity.shortcut;
 
 import org.keycloak.models.map.storage.file.entity.FileRealmEntity;
+import org.keycloak.models.map.storage.file.realm.AttributesYamlContext;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +14,14 @@ import static org.keycloak.models.map.storage.file.entity.FileRealmEntity.BROWSE
  * @author hmlnarik
  */
 public class FileRealmBrowserHeaders implements ShortcutProcessor<FileRealmEntity, Map<String, String>, Map.Entry<String, List<String>>> {
+
+    public static class BrowserHeadersYamlContext extends AttributesYamlContext {
+
+        @Override
+        public void add(String name, Object value) {
+            super.add("browserHeaders." + name, value);
+        }
+    }
 
     @Override
     public boolean isHandledByShortcut(Map.Entry<String, List<String>> p0) {

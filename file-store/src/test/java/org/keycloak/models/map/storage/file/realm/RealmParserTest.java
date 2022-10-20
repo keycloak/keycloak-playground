@@ -19,6 +19,10 @@ package org.keycloak.models.map.storage.file.realm;
 import java.io.FileNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.keycloak.models.map.storage.file.entity.FileRealmEntity;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasSize;
 
 /**
  *
@@ -29,8 +33,16 @@ public class RealmParserTest {
     @Test
     public void testEventProcessing() throws FileNotFoundException {
         RealmParser p = new RealmParser();
-        FileRealmEntity v = p.parseLowLevel(getClass().getResourceAsStream("/testdir/realm1/realm.yaml"));
-        System.out.println(v);
+        FileRealmEntity v = p.parse(getClass().getResourceAsStream("/testdir/realm1/realm.yaml"));
+
+        assertThat(v.getAttributes().keySet(), containsInAnyOrder("displayName", "a", "b", "browserHeaders.X-Debug", "browserHeaders.X-Keycloak"));
+        assertThat(v.getAttribute("displayName"), contains("This is a display name"));
+        assertThat(v.getAttribute("a"), contains("11"));
+        assertThat(v.getAttribute("b"), contains("aa", "bb"));
+        assertThat(v.getAttribute("browserHeaders.X-Debug"), contains("1"));
+        assertThat(v.getAttribute("browserHeaders.X-Keycloak"), contains("19.0.3"));
+
+        assertThat(v.getComponents(), hasSize(3));
     }
 
 }

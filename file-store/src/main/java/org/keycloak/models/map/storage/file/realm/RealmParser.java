@@ -19,7 +19,6 @@ package org.keycloak.models.map.storage.file.realm;
 import java.io.InputStream;
 import org.keycloak.models.map.storage.file.YamlContextAwareParser;
 import org.keycloak.models.map.storage.file.entity.FileRealmEntity;
-import org.keycloak.models.map.storage.file.realm.RealmYamlContext;
 
 /**
  *
@@ -27,7 +26,7 @@ import org.keycloak.models.map.storage.file.realm.RealmYamlContext;
  */
 public class RealmParser {
 
-    public FileRealmEntity parseLowLevel(InputStream is) {
+    public FileRealmEntity parse(InputStream is) {
         return YamlContextAwareParser.parse(is, new RealmYamlContext());
     }
 }
