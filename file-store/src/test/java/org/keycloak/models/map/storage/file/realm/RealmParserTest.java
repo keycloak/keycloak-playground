@@ -16,13 +16,14 @@
  */
 package org.keycloak.models.map.storage.file.realm;
 
+import org.keycloak.models.map.realm.MapRealmEntity;
 import java.io.FileNotFoundException;
 import org.junit.jupiter.api.Test;
-import org.keycloak.models.map.storage.file.entity.FileRealmEntity;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 
 /**
  *
@@ -33,7 +34,8 @@ public class RealmParserTest {
     @Test
     public void testEventProcessing() throws FileNotFoundException {
         RealmParser p = new RealmParser();
-        FileRealmEntity v = p.parse(getClass().getResourceAsStream("/testdir/realm1/realm.yaml"));
+        String realmId = "realm1";
+        MapRealmEntity v = p.getRealmById(realmId);
 
         assertThat(v.getAttributes().keySet(), containsInAnyOrder("displayName", "a", "b", "browserHeaders.X-Debug", "browserHeaders.X-Keycloak"));
         assertThat(v.getAttribute("displayName"), contains("This is a display name"));
@@ -43,6 +45,8 @@ public class RealmParserTest {
         assertThat(v.getAttribute("browserHeaders.X-Keycloak"), contains("19.0.3"));
 
         assertThat(v.getComponents(), hasSize(3));
+
+        assertThat(v.getId(), is("realm1"));
     }
 
 }

@@ -16,9 +16,10 @@
  */
 package org.keycloak.models.map.storage.file.realm;
 
+import org.keycloak.models.map.realm.MapRealmEntity;
 import java.io.InputStream;
 import org.keycloak.models.map.storage.file.YamlContextAwareParser;
-import org.keycloak.models.map.storage.file.entity.FileRealmEntity;
+import java.util.Objects;
 
 /**
  *
@@ -26,7 +27,18 @@ import org.keycloak.models.map.storage.file.entity.FileRealmEntity;
  */
 public class RealmParser {
 
-    public FileRealmEntity parse(InputStream is) {
+    public MapRealmEntity parse(InputStream is) {
         return YamlContextAwareParser.parse(is, new RealmYamlContext());
+    }
+
+    public MapRealmEntity getRealmById(String realmId) {
+        MapRealmEntity res = parse(getClass().getResourceAsStream("/testdir/" + realmId + "/realm.yaml"));
+        if (res == null) {
+            return null;
+        }
+        if (res.getId() == null || Objects.equals(res.getId(), realmId)) {
+            res.setId(realmId);
+        }
+        return res;
     }
 }

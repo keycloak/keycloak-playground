@@ -25,6 +25,7 @@ import java.math.BigInteger;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.EnumMap;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.yaml.snakeyaml.constructor.Construct;
@@ -146,6 +147,7 @@ public class YamlContextAwareParser<E> {
     }
 
     public static <E> E parse(InputStream is, YamlContext<E> initialContext) {
+        Objects.requireNonNull(is, "Input stream invalid");
         Parser p = new ParserImpl(new StreamReader(new UnicodeReader(is)));
         return new YamlContextAwareParser<>(p, initialContext).parse();
     }

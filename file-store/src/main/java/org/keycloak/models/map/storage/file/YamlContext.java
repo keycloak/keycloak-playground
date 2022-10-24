@@ -31,6 +31,11 @@ public interface YamlContext<V> {
         return null;
     }
 
+    /**
+     *
+     * @param name
+     * @param value
+     */
     default void add(String name, Object value) { };
 
     default void add(Object value) { };

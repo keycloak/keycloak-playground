@@ -21,17 +21,45 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
+ * YAML parser context which suitable for properties stored in a {@code Map<String, List<String>>}
+ * which accepts
  *
  * @author hmlnarik
  */
-public class AttributesYamlContext extends DefaultMapContext {
+public class AttributesLikeYamlContext extends DefaultMapContext {
+
+    /**
+     * Returns a YAML attribute-like context where key of each element
+     * is stored in YAML file without a given prefix, and in the internal
+     * representation each key has that prefix.
+     *
+     * @param prefix
+     * @return
+     */
+    public static AttributesLikeYamlContext prefixed(String prefix) {
+        return new Prefixed(prefix);
+    }
 
     @Override
     public void add(String name, Object value) {
-        if (! (value instanceof List)) {
+        if (value != null && ! (value instanceof List)) {
             value = Arrays.asList(String.valueOf(value));
         }
         super.add(name, value);
+    }
+
+    private static class Prefixed extends AttributesLikeYamlContext {
+
+        protected final String prefix;
+
+        public Prefixed(String prefix) {
+            this.prefix = prefix;
+        }
+
+        @Override
+        public void add(String name, Object value) {
+            super.add(prefix + name, value);
+        }
     }
 
 }

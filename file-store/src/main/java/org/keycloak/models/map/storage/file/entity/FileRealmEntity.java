@@ -39,32 +39,4 @@ public interface FileRealmEntity extends MapRealmEntity {
     @Override
     @Shortcut(name="keys", processor=FileRealmKeys.class)
     public Set<MapComponentEntity> getComponents();
-
-    public class Impl extends MapRealmEntityImpl implements FileRealmEntity {
-
-        private static final FileRealmKeys FILE_REALM_KEYS = new FileRealmKeys();
-        private static final Predicate<MapComponentEntity> FILEREALMKEYS_NEG_PRED = Predicate.not(FILE_REALM_KEYS::isHandledByShortcut);
-
-        public Integer version;
-
-        @SuppressWarnings("unchecked")
-        public java.util.Set<org.keycloak.models.map.realm.entity.MapComponentEntity> getComponentsForSerialization() {
-            final Set<MapComponentEntity> components = super.getComponents();
-            return components == null ? null : components.stream()
-              .filter(FILEREALMKEYS_NEG_PRED)
-              .collect(Collectors.toSet());
-        }
-
-        private static final FileRealmBrowserHeaders FILE_REALM_BROWSER_HEADERS = new FileRealmBrowserHeaders();
-        private static final Predicate<Entry<String, List<String>>> FILEREALMBROWSERHEADERS_NEG_PRED = Predicate.not(FILE_REALM_BROWSER_HEADERS::isHandledByShortcut);
-
-        public Map<String, List<String>> getAttributesForSerialization() {
-            Map<String, List<String>> attributes = super.getAttributes();
-            return attributes == null ? null : attributes.entrySet().stream()
-              .filter(FILEREALMBROWSERHEADERS_NEG_PRED)
-              .filter(me -> ! "displayName".equals(me.getKey()))
-              .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
-        }
-
-    }
 }
