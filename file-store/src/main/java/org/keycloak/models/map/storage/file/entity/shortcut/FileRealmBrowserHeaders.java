@@ -1,7 +1,7 @@
 package org.keycloak.models.map.storage.file.entity.shortcut;
 
+import org.keycloak.models.map.storage.file.parser.ShortcutProcessor;
 import org.keycloak.models.map.storage.file.YamlContext;
-import org.keycloak.models.map.storage.file.annotations.YamlContextProducer;
 import org.keycloak.models.map.storage.file.realm.AttributesLikeYamlContext;
 
 /**
@@ -10,7 +10,6 @@ import org.keycloak.models.map.storage.file.realm.AttributesLikeYamlContext;
  */
 public class FileRealmBrowserHeaders implements ShortcutProcessor {
 
-    @YamlContextProducer
     public static YamlContext<?> produceYamlContext() {
         return AttributesLikeYamlContext.prefixed("browserHeaders.");
     }

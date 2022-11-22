@@ -5,7 +5,7 @@
 
 package org.keycloak.models.map.storage.file.annotations;
 
-import org.keycloak.models.map.storage.file.entity.shortcut.ShortcutProcessor;
+import org.keycloak.models.map.storage.file.parser.ShortcutProcessor;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
@@ -21,8 +21,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface Shortcut {
 
-    public String property() default "";
-
     /**
      * Name of the property in the file.
      * @return
@@ -36,7 +34,7 @@ public @interface Shortcut {
     public String key() default "";
 
     /**
-     * Stateless shortcut processor class
+     * Stateless shortcut processor class with no-arg constructor
      */
     public Class<? extends ShortcutProcessor> processor() default ShortcutProcessor.class;
 

@@ -3,16 +3,15 @@ package org.keycloak.models.map.storage.file.entity;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.keycloak.models.map.realm.MapRealmEntity;
-import org.keycloak.models.map.realm.MapRealmEntityImpl;
 import org.keycloak.models.map.realm.entity.MapComponentEntity;
 import org.keycloak.models.map.storage.file.annotations.GenerateJsonSchema;
 import org.keycloak.models.map.storage.file.annotations.Shortcut;
+import org.keycloak.models.map.storage.file.annotations.YamlContextSupplier;
 import org.keycloak.models.map.storage.file.entity.shortcut.FileRealmBrowserHeaders;
 import org.keycloak.models.map.storage.file.entity.shortcut.FileRealmKeys;
-import java.util.Map.Entry;
+import org.keycloak.models.map.storage.file.realm.AttributesLikeYamlContext;
+import org.keycloak.models.map.storage.file.realm.ComponentsYamlContext;
 
 @GenerateJsonSchema(
     version=1,
@@ -21,8 +20,6 @@ import java.util.Map.Entry;
     title="Keycloak Realm Schema"
 )
 public interface FileRealmEntity extends MapRealmEntity {
-
-    public static final String BROWSER_HEADER_PREFIX = "_browser_header.";
 
     @Override
     // @DefaultFrom("id")
@@ -34,9 +31,11 @@ public interface FileRealmEntity extends MapRealmEntity {
     @Override
     @Shortcut(name="displayName", key="displayName")
     @Shortcut(name="browserHeaders", processor=FileRealmBrowserHeaders.class)
+    @YamlContextSupplier(AttributesLikeYamlContext.class)
     Map<String, List<String>> getAttributes();
 
     @Override
     @Shortcut(name="keys", processor=FileRealmKeys.class)
+    @YamlContextSupplier(ComponentsYamlContext.class)
     public Set<MapComponentEntity> getComponents();
 }

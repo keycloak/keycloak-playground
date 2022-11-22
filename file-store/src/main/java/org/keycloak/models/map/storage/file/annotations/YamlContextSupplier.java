@@ -14,12 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.keycloak.models.map.storage.file.entity.shortcut;
+package org.keycloak.models.map.storage.file.annotations;
 
-/**
- *
- * @author hmlnarik
- */
-public interface ShortcutProcessor {
+import org.keycloak.models.map.storage.file.YamlContext;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
+@Retention(RetentionPolicy.SOURCE)
+@Target(ElementType.METHOD)
+public @interface YamlContextSupplier {
+    /**
+     * Yaml context creator with no-arg constructor
+     */
+    public Class<? extends YamlContext> value() default YamlContext.class;
 }

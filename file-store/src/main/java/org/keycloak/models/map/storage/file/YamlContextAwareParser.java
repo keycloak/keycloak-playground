@@ -28,6 +28,7 @@ import java.util.EnumMap;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Supplier;
+import org.jboss.logging.Logger;
 import org.yaml.snakeyaml.constructor.Construct;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 import org.yaml.snakeyaml.error.YAMLException;
@@ -49,6 +50,8 @@ import org.yaml.snakeyaml.resolver.Resolver;
  * @author hmlnarik
  */
 public class YamlContextAwareParser<E> {
+
+    private static final Logger LOG = Logger.getLogger(YamlContextAwareParser.class);
 
     private static final Resolver RESOLVER = new Resolver();
     private final Parser parser;
@@ -204,8 +207,9 @@ public class YamlContextAwareParser<E> {
     }
 
     protected Object parseSequence() {
+        LOG.debugf("Parsing sequence");
         YamlContext context = contextStack.peek();
-        while (!parser.checkEvent(Event.ID.SequenceEnd)) {
+        while (! parser.checkEvent(Event.ID.SequenceEnd)) {
             context.add(parseNodeInFreshContext("[]"));
         }
         consumeEvent(Event.ID.SequenceEnd, "Expected end of sequence");
@@ -213,14 +217,17 @@ public class YamlContextAwareParser<E> {
     }
 
     protected Object parseMapping() {
+        LOG.debugf("Parsing mapping");
         YamlContext context = contextStack.peek();
-        while (!parser.checkEvent(Event.ID.MappingEnd)) {
+        while (! parser.checkEvent(Event.ID.MappingEnd)) {
             // TODO: add support for key Tag.MERGE tag if needed
             Object key = parseNodeInFreshContext();
-            if (!(key instanceof String)) {
+            LOG.debugf("Parsed mapping key: %s", key);
+            if (! (key instanceof String)) {
                 throw new IllegalStateException("Invalid key in map: " + key);
             }
             Object value = parseNodeInFreshContext(key);
+            LOG.debugf("Parsed mapping value: %s", value);
             context.add((String) key, value);
         }
         consumeEvent(Event.ID.MappingEnd, "Expected end of mapping");
@@ -233,7 +240,7 @@ public class YamlContextAwareParser<E> {
         ScalarNode node = new ScalarNode(nodeTag, se.getValue(), se.getStartMark(), se.getEndMark(), se.getScalarStyle());
         final Object value = MiniConstructor.INSTANCE.constructStandardJavaInstance(node.getType(), node);
         context.add(value);
-        return value;
+        return context.getResult();
     }
     private static final EnumMap<Event.ID, Supplier<YamlContext<?>>> CONTEXT_CONSTRUCTORS = new EnumMap<>(Event.ID.class);
     static {

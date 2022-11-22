@@ -11,7 +11,7 @@ attributes:
     - bb
 
 components:
-  c1: 
+  c1:
     providerId: xyz
     aa: aa
     bb: bb

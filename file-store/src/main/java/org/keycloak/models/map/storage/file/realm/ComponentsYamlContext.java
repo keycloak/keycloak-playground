@@ -27,7 +27,21 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- *
+ * <table>
+ * <tr><td>Result:</td>                         <td>{@code List<MapComponentEntity>}</td></tr>
+ * <tr><td>Expected value format in YAML:</td>  <td>map</td></tr>
+ * <tr><td>Usual path to yaml context:</td>     <td>{@code /components}</td></tr>
+ * <tr>
+ *  <td>Example value</td>
+ *  <td>
+ *   <pre>
+ *     c1:
+ *       providerId: xyz
+ *       configAa: za
+ *   </pre>
+ * </td>
+ * </tr>
+ * </table>
  * @author hmlnarik
  */
 public class ComponentsYamlContext extends DefaultListContext {

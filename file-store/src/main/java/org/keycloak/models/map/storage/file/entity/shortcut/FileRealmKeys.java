@@ -1,5 +1,6 @@
 package org.keycloak.models.map.storage.file.entity.shortcut;
 
+import org.keycloak.models.map.storage.file.parser.ShortcutProcessor;
 import org.keycloak.keys.KeyProvider;
 import org.keycloak.models.map.realm.entity.MapComponentEntity;
 import org.keycloak.models.map.realm.entity.MapComponentEntityImpl;

@@ -16,8 +16,10 @@
  */
 package org.keycloak.models.map.storage.file.realm;
 
+import org.keycloak.models.map.storage.file.YamlContext;
 import org.keycloak.models.map.storage.file.YamlContext.DefaultMapContext;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -40,12 +42,13 @@ public class AttributesLikeYamlContext extends DefaultMapContext {
         return new Prefixed(prefix);
     }
 
+    public static SingletonAttributesMapYamlContext singletonAttributesMap(String key) {
+        return new SingletonAttributesMapYamlContext(key);
+    }
+
     @Override
-    public void add(String name, Object value) {
-        if (value != null && ! (value instanceof List)) {
-            value = Arrays.asList(String.valueOf(value));
-        }
-        super.add(name, value);
+    public YamlContext<?> getContext(String nameOfSubcontext) {
+        return new AttributeValueYamlContext();
     }
 
     private static class Prefixed extends AttributesLikeYamlContext {
@@ -59,6 +62,33 @@ public class AttributesLikeYamlContext extends DefaultMapContext {
         @Override
         public void add(String name, Object value) {
             super.add(prefix + name, value);
+        }
+    }
+
+    private static class SingletonAttributesMapYamlContext extends DefaultMapContext {
+
+        protected final String key;
+
+        public SingletonAttributesMapYamlContext(String key) {
+            this.key = key;
+        }
+
+        @Override
+        public void add(Object value) {
+            if (value != null) {
+                LinkedList<String> stringList = (LinkedList<String>) getResult().computeIfAbsent(key, s -> new LinkedList<>());
+                stringList.add(String.valueOf(value));
+            }
+        }
+    }
+
+    public static class AttributeValueYamlContext extends DefaultListContext {
+
+        @Override
+        public void add(Object value) {
+            if (value != null) {
+                super.add(String.valueOf(value));
+            }
         }
     }
 

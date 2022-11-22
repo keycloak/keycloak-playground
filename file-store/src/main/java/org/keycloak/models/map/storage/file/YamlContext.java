@@ -27,17 +27,29 @@ import java.util.Map;
  */
 public interface YamlContext<V> {
 
+    /**
+     * Called after reading a key of map entry in YAML file and before reading its value.
+     * The key of the entry is represented as {@code nameOfSubcontext} parameter, and
+     * provides means to in switch the parser context.
+     * @param nameOfSubcontext Key of the map entry
+     */
     default YamlContext<?> getContext(String nameOfSubcontext) {
         return null;
     }
 
     /**
-     *
+     * Called after reading a map entry from the yaml file is finished. The entry is represented as
+     * {@code name} parameter (key part of the entry) and {@code value} (value part of the entry).
      * @param name
      * @param value
      */
     default void add(String name, Object value) { };
 
+    /**
+     * Called after reading an array item from the yaml file is finished. The value is represented as
+     * the {@code value} parameter.
+     * @param value
+     */
     default void add(Object value) { };
 
     V getResult();
