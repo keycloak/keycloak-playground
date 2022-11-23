@@ -42,7 +42,7 @@ public class AttributesLikeYamlContext extends DefaultMapContext {
         return new Prefixed(prefix);
     }
 
-    public static SingletonAttributesMapYamlContext singletonAttributesMap(String key) {
+    public static DefaultMapContext singletonAttributesMap(String key) {
         return new SingletonAttributesMapYamlContext(key);
     }
 

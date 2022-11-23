@@ -22,36 +22,80 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * A class implementing a {@code YamlContext} interface represents a transformer
+ * from a primitive value / sequence / mapping representation as declared in YAML
+ * format into a Java object of type {@code V}, with ability to produce
+ * the {@link #getResult() resulting instance} of parsing.
+ *
+ * <p>
+ * NOTE: In the future, this transformer might also cover the other direction:
+ * conversion from Java object into YAML primitive value / sequence / mapping representation.
+ *
+ * <p>
+ * This transformer handles only a single nesting level in YAML file. The root level
+ * is at the beginning of YAML document. Every mapping key and every sequence then
+ * represents next level of nesting.
+ *
+ * <h3>Examples</h3>
+ *
  *
  * @author hmlnarik
+ * @param <V> Type of the result
  */
 public interface YamlContext<V> {
 
     /**
      * Called after reading a key of map entry in YAML file and before reading its value.
      * The key of the entry is represented as {@code nameOfSubcontext} parameter, and
-     * provides means to in switch the parser context.
+     * provides means to specify a {@code YamlContext} for transforming the mapping value
+     * into appropriate Java object.
+     *
      * @param nameOfSubcontext Key of the map entry
+     *
+     * @return Context used for transforming the value,
+     * or {@code null} if the default primitive / sequence / mapping context should be used instead.
+     *
+     * @see DefaultObjectContext
+     * @see DefaultListContext
+     * @see DefaultMapContext
      */
     default YamlContext<?> getContext(String nameOfSubcontext) {
         return null;
     }
 
     /**
-     * Called after reading a map entry from the yaml file is finished. The entry is represented as
-     * {@code name} parameter (key part of the entry) and {@code value} (value part of the entry).
+     * Modifies the {@link #getResult() result returned} from within this context by
+     * providing the read mapping entry {@code name} to given {@code value}.
+     * <p>
+     * Called after reading a map entry (both key and value) from the YAML file is finished.
+     * The entry is represented as {@code name} parameter (key part of the entry)
+     * and {@code value} (value part of the entry).
+     * <p>
+     * The method is called in the same order as the mapping items appear in the source YAML mapping.
+     *
      * @param name
      * @param value
      */
     default void add(String name, Object value) { };
 
     /**
-     * Called after reading an array item from the yaml file is finished. The value is represented as
-     * the {@code value} parameter.
+     * Modifies the {@link #getResult() result returned} from within this context by
+     * providing the read primitive value or a single sequence item in the {@code value} parameter.
+     * <p>
+     * Called after reading a primitive value or a single sequence item
+     * from the YAML file is finished.
+     * <p>
+     * If the parsed YAML part was a sequence, this method is called in the same order
+     * as the sequence items appear in the source YAML sequence.
+     *
      * @param value
      */
     default void add(Object value) { };
 
+    /**
+     * Returns the result of parsing the given part of YAML file.
+     * @return
+     */
     V getResult();
 
     public static class DefaultObjectContext implements YamlContext<Object> {

@@ -28,7 +28,8 @@ import java.util.stream.Stream;
 import org.jboss.logging.Logger;
 
 /**
- *
+ * {@link YamlContext} which handles any entity accompanied with {@link EntityField} field getters and setters,
+ * namely {@code Map*Entity} classes.
  * @author hmlnarik
  */
 public abstract class MapEntityYamlContext<T> implements YamlContext<T> {
