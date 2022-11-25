@@ -1,10 +1,10 @@
 clientId: https://localhost/client1
 attributes:
-  a: '11'
+  a: 'c11'
   b: 
-    - aa
-    - bb
-    - bb
+    - caa
+    - cbb
+    - cbb
 
 roles:
   clientRole1:
