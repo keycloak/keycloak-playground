@@ -48,6 +48,7 @@ public class AttributesLikeYamlContext extends DefaultMapContext {
 
     @Override
     public YamlContext<?> getContext(String nameOfSubcontext) {
+        // regardless of the key name, the values need to be converted into Set<String> which is the purpose of AttributeValueYamlContext
         return new AttributeValueYamlContext();
     }
 

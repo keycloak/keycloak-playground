@@ -17,17 +17,22 @@
 package org.keycloak.models.map.storage.file.client;
 
 import org.keycloak.models.map.client.MapClientEntity;
-import org.keycloak.models.map.realm.MapRealmEntity;
+import org.keycloak.models.map.client.MapProtocolMapperEntity;
 import org.keycloak.models.map.storage.file.YamlContextAwareParser;
 import org.keycloak.models.map.storage.file.realm.MapEntityYamlContext;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -47,6 +52,14 @@ public class ClientParserTest {
         assertThat(v.getAttributes().keySet(), containsInAnyOrder("a", "b"));
         assertThat(v.getAttribute("a"), contains("c11"));
         assertThat(v.getAttribute("b"), containsInAnyOrder("caa", "cbb", "cbb"));
+
+        assertThat(v.getProtocolMappers(), hasSize(1));
+        assertTrue(v.getProtocolMapper("name1").isPresent());
+        final MapProtocolMapperEntity pm = v.getProtocolMapper("name1").get();
+        assertThat(pm.getProtocolMapper(), is("pm"));
+        assertThat(pm.getConfig(), hasEntry("pma", "a"));
+        assertThat(pm.getConfig(), hasEntry("pmb", "b"));
+        assertThat(pm.getConfig(), is(aMapWithSize(2)));
 
 //        assertThat(v.getId(), is("client1"));
 

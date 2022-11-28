@@ -52,6 +52,7 @@ import org.yaml.snakeyaml.resolver.Resolver;
 public class YamlContextAwareParser<E> {
 
     private static final Logger LOG = Logger.getLogger(YamlContextAwareParser.class);
+    public static final String ARRAY_CONTEXT = "$@[]@$";
 
     private static final Resolver RESOLVER = new Resolver();
     private final Parser parser;
@@ -210,7 +211,7 @@ public class YamlContextAwareParser<E> {
         LOG.debugf("Parsing sequence");
         YamlContext context = contextStack.peek();
         while (! parser.checkEvent(Event.ID.SequenceEnd)) {
-            context.add(parseNodeInFreshContext("[]"));
+            context.add(parseNodeInFreshContext(ARRAY_CONTEXT));
         }
         consumeEvent(Event.ID.SequenceEnd, "Expected end of sequence");
         return context.getResult();
