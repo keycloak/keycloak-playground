@@ -20,30 +20,28 @@ import org.keycloak.models.map.storage.file.YamlContext.DefaultListContext;
 import org.keycloak.models.map.storage.file.YamlContext.DefaultMapContext;
 import org.keycloak.models.map.storage.file.YamlContext.DefaultObjectContext;
 import java.io.InputStream;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.EnumMap;
 import java.util.Objects;
-import java.util.UUID;
+import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.jboss.logging.Logger;
-import org.yaml.snakeyaml.constructor.Construct;
-import org.yaml.snakeyaml.constructor.SafeConstructor;
-import org.yaml.snakeyaml.error.YAMLException;
-import org.yaml.snakeyaml.events.Event;
-import org.yaml.snakeyaml.events.Event.ID;
-import org.yaml.snakeyaml.events.NodeEvent;
-import org.yaml.snakeyaml.events.ScalarEvent;
-import org.yaml.snakeyaml.nodes.NodeId;
-import org.yaml.snakeyaml.nodes.ScalarNode;
-import org.yaml.snakeyaml.nodes.Tag;
-import org.yaml.snakeyaml.parser.Parser;
-import org.yaml.snakeyaml.parser.ParserImpl;
-import org.yaml.snakeyaml.reader.StreamReader;
-import org.yaml.snakeyaml.reader.UnicodeReader;
-import org.yaml.snakeyaml.resolver.Resolver;
+import org.snakeyaml.engine.v2.api.ConstructNode;
+import org.snakeyaml.engine.v2.api.LoadSettings;
+import org.snakeyaml.engine.v2.api.YamlUnicodeReader;
+import org.snakeyaml.engine.v2.constructor.StandardConstructor;
+import org.snakeyaml.engine.v2.events.Event;
+import org.snakeyaml.engine.v2.events.Event.ID;
+import org.snakeyaml.engine.v2.events.NodeEvent;
+import org.snakeyaml.engine.v2.events.ScalarEvent;
+import org.snakeyaml.engine.v2.exceptions.ConstructorException;
+import org.snakeyaml.engine.v2.nodes.ScalarNode;
+import org.snakeyaml.engine.v2.nodes.Tag;
+import org.snakeyaml.engine.v2.parser.Parser;
+import org.snakeyaml.engine.v2.parser.ParserImpl;
+import org.snakeyaml.engine.v2.resolver.JsonScalarResolver;
+import org.snakeyaml.engine.v2.resolver.ScalarResolver;
+import org.snakeyaml.engine.v2.scanner.StreamReader;
 
 /**
  *
@@ -54,105 +52,36 @@ public class YamlContextAwareParser<E> {
     private static final Logger LOG = Logger.getLogger(YamlContextAwareParser.class);
     public static final String ARRAY_CONTEXT = "$@[]@$";
 
-    private static final Resolver RESOLVER = new Resolver();
+    private static final ScalarResolver RESOLVER = new JsonScalarResolver();
     private final Parser parser;
     private final YamlContextStack contextStack;
 
     // Leverage SnakeYaml's translation of primitive values
-    private static final class MiniConstructor extends SafeConstructor {
+    private static final class MiniConstructor extends StandardConstructor {
 
-        // This has been based on SnakeYaml's own Constuctor.constructStandardJavaInstance
-        @SuppressWarnings(value = "unchecked")
-        public Object constructStandardJavaInstance(@SuppressWarnings(value = "rawtypes") Class type, ScalarNode node) {
-            Object result;
-            if (type == String.class) {
-                Construct stringConstructor = yamlConstructors.get(Tag.STR);
-                result = stringConstructor.construct(node);
-            } else if (type == Boolean.class || type == Boolean.TYPE) {
-                Construct boolConstructor = yamlConstructors.get(Tag.BOOL);
-                result = boolConstructor.construct(node);
-            } else if (type == Character.class || type == Character.TYPE) {
-                Construct charConstructor = yamlConstructors.get(Tag.STR);
-                String ch = (String) charConstructor.construct(node);
-                if (ch.length() == 0) {
-                    result = null;
-                } else if (ch.length() != 1) {
-                    throw new YAMLException("Invalid node Character: '" + ch + "'; length: " + ch.length());
-                } else {
-                    result = Character.valueOf(ch.charAt(0));
-                }
-            } else if (Date.class.isAssignableFrom(type)) {
-                Construct dateConstructor = yamlConstructors.get(Tag.TIMESTAMP);
-                Date date = (Date) dateConstructor.construct(node);
-                if (type == Date.class) {
-                    result = date;
-                } else {
-                    try {
-                        java.lang.reflect.Constructor<?> constr = type.getConstructor(long.class);
-                        result = constr.newInstance(date.getTime());
-                    } catch (RuntimeException e) {
-                        throw e;
-                    } catch (Exception e) {
-                        throw new YAMLException("Cannot construct: '" + type + "'");
-                    }
-                }
-            } else if (type == Float.class || type == Double.class || type == Float.TYPE || type == Double.TYPE || type == BigDecimal.class) {
-                if (type == BigDecimal.class) {
-                    result = new BigDecimal(node.getValue());
-                } else {
-                    Construct doubleConstructor = yamlConstructors.get(Tag.FLOAT);
-                    result = doubleConstructor.construct(node);
-                    if (type == Float.class || type == Float.TYPE) {
-                        result = Float.valueOf(((Double) result).floatValue());
-                    }
-                }
-            } else if (type == Byte.class || type == Short.class || type == Integer.class || type == Long.class || type == BigInteger.class || type == Byte.TYPE || type == Short.TYPE || type == Integer.TYPE || type == Long.TYPE) {
-                Construct intConstructor = yamlConstructors.get(Tag.INT);
-                result = intConstructor.construct(node);
-                if (type == Byte.class || type == Byte.TYPE) {
-                    result = Byte.valueOf(result.toString());
-                } else if (type == Short.class || type == Short.TYPE) {
-                    result = Short.valueOf(result.toString());
-                } else if (type == Integer.class || type == Integer.TYPE) {
-                    result = Integer.valueOf(result.toString());
-                } else if (type == Long.class || type == Long.TYPE) {
-                    result = Long.valueOf(result.toString());
-                } else {
-                    // only BigInteger left
-                    result = new BigInteger(result.toString());
-                }
-            } else if (Enum.class.isAssignableFrom(type)) {
-                String enumValueName = node.getValue();
-                try {
-                    result = Enum.valueOf(type, enumValueName);
-                } catch (Exception ex) {
-                    throw new YAMLException("Unable to find enum value '" + enumValueName + "' for enum class: " + type.getName());
-                }
-            } else if (Calendar.class.isAssignableFrom(type)) {
-                ConstructYamlTimestamp contr = new ConstructYamlTimestamp();
-                contr.construct(node);
-                result = contr.getCalendar();
-            } else if (Number.class.isAssignableFrom(type)) {
-                //since we do not know the exact type we create Float
-                ConstructYamlFloat contr = new ConstructYamlFloat();
-                result = contr.construct(node);
-            } else if (UUID.class == type) {
-                result = UUID.fromString(node.getValue());
-            } else {
-                if (yamlConstructors.containsKey(node.getTag())) {
-                    result = yamlConstructors.get(node.getTag()).construct(node);
-                } else {
-                    throw new YAMLException("Unsupported class: " + type);
-                }
-            }
-            return result;
+        public MiniConstructor() {
+            super(SETTINGS);
         }
+
+        // This has been based on SnakeYaml's own org.snakeyaml.engine.v2.constructor.BaseConstructor.constructObjectNoCheck(Node node)
+        @SuppressWarnings(value = "unchecked")
+        public Object constructStandardJavaInstance(ScalarNode node) {
+            return findConstructorFor(node)
+                .map(constructor -> constructor.construct(node))
+                .orElseThrow(() -> new ConstructorException(null, Optional.empty(), "could not determine a constructor for the tag " + node.getTag(), node.getStartMark()));
+        }
+
         public static final MiniConstructor INSTANCE = new MiniConstructor();
     }
 
+    private static final LoadSettings SETTINGS = LoadSettings.builder()
+      .setAllowRecursiveKeys(false)
+      .setParseComments(false)
+      .build();
+
     public static <E> E parse(InputStream is, YamlContext<E> initialContext) {
         Objects.requireNonNull(is, "Input stream invalid");
-        Parser p = new ParserImpl(new StreamReader(new UnicodeReader(is)));
+        Parser p = new ParserImpl(SETTINGS, new StreamReader(SETTINGS, new YamlUnicodeReader(is)));
         return new YamlContextAwareParser<>(p, initialContext).parse();
     }
 
@@ -179,7 +108,7 @@ public class YamlContextAwareParser<E> {
         if (parser.checkEvent(Event.ID.Alias)) {
             throw new IllegalStateException("Aliases are not handled at this moment");
         }
-        Event ev = parser.getEvent();
+        Event ev = parser.next();
 //        System.out.println("  Parsing " + ev);
         if (!(ev instanceof NodeEvent)) {
             throw new IllegalArgumentException("Invalid event " + ev);
@@ -193,7 +122,7 @@ public class YamlContextAwareParser<E> {
             case Scalar:
                 ScalarEvent se = (ScalarEvent) ev;
                 boolean implicit = se.getImplicit().canOmitTagInPlainScalar();
-                Tag nodeTag = constructTag(se.getTag(), NodeId.scalar, se.getValue(), implicit);
+                Tag nodeTag = constructTag(se.getTag(), se.getValue(), implicit);
                 return parseScalar(nodeTag, se);
             case SequenceStart:
                 return parseSequence();
@@ -207,6 +136,11 @@ public class YamlContextAwareParser<E> {
 //        }
     }
 
+    /**
+     * Parses a sequence node inside the current context. Each sequence item is parsed in the context
+     * supplied by the current
+     * @return
+     */
     protected Object parseSequence() {
         LOG.debugf("Parsing sequence");
         YamlContext context = contextStack.peek();
@@ -217,17 +151,21 @@ public class YamlContextAwareParser<E> {
         return context.getResult();
     }
 
+    /**
+     * Parses a mapping node inside the current context. Each mapping value is parsed in the context
+     * supplied by the current context for the mapping key.
+     * @return
+     */
     protected Object parseMapping() {
         LOG.debugf("Parsing mapping");
         YamlContext context = contextStack.peek();
         while (! parser.checkEvent(Event.ID.MappingEnd)) {
-            // TODO: add support for key Tag.MERGE tag if needed
             Object key = parseNodeInFreshContext();
             LOG.debugf("Parsed mapping key: %s", key);
             if (! (key instanceof String)) {
                 throw new IllegalStateException("Invalid key in map: " + key);
             }
-            Object value = parseNodeInFreshContext(key);
+            Object value = parseNodeInFreshContext((String) key);
             LOG.debugf("Parsed mapping value: %s", value);
             context.add((String) key, value);
         }
@@ -235,14 +173,19 @@ public class YamlContextAwareParser<E> {
         return context.getResult();
     }
 
+    /**
+     * Parses a scalar node inside the current context.
+     * @return
+     */
     protected Object parseScalar(Tag nodeTag, ScalarEvent se) {
         YamlContext context = contextStack.peek();
 //        System.out.println("value: " + se.getValue() + ", context: " + context + ", type: " + nodeTag.getClassName());
-        ScalarNode node = new ScalarNode(nodeTag, se.getValue(), se.getStartMark(), se.getEndMark(), se.getScalarStyle());
-        final Object value = MiniConstructor.INSTANCE.constructStandardJavaInstance(node.getType(), node);
+        ScalarNode node = new ScalarNode(nodeTag, true, se.getValue(), se.getScalarStyle(), se.getStartMark(), se.getEndMark());
+        final Object value = MiniConstructor.INSTANCE.constructStandardJavaInstance(node);
         context.add(value);
         return context.getResult();
     }
+
     private static final EnumMap<Event.ID, Supplier<YamlContext<?>>> CONTEXT_CONSTRUCTORS = new EnumMap<>(Event.ID.class);
     static {
         CONTEXT_CONSTRUCTORS.put(ID.Scalar, DefaultObjectContext::new);
@@ -254,24 +197,27 @@ public class YamlContextAwareParser<E> {
      * Ensure that the next event is the expectedEventId, otherwise throw an exception, and consume that event
      */
     private Event consumeEvent(ID expectedEventId, String message) throws IllegalArgumentException {
-        if (!parser.checkEvent(expectedEventId)) {
-            Event event = parser.getEvent();
+        if (! parser.checkEvent(expectedEventId)) {
+            Event event = parser.next();
             throw new IllegalArgumentException(message + " at " + event.getStartMark());
         }
-        return parser.getEvent();
+        return parser.next();
     }
 
-    private static Tag constructTag(String tag, NodeId nodeId, String value, boolean implicit) {
-        Tag nodeTag;
-        if (tag == null || tag.equals("!")) {
-            nodeTag = RESOLVER.resolve(nodeId, value, implicit);
-        } else {
-            nodeTag = new Tag(tag);
-        }
-        return nodeTag;
+    private static Tag constructTag(Optional<String> tag, String value, boolean implicit) {
+        // based on org.snakeyaml.engine.v2.composer.Composer.composeScalarNode(Optional<Anchor> anchor, List<CommentLine> blockComments)
+        return tag.filter(t -> ! "!".equals(t))
+          .map(Tag::new)
+          .orElseGet(() -> RESOLVER.resolve(value, implicit));
     }
 
-    private Object parseNodeInFreshContext(Object key) throws IllegalStateException {
+    /**
+     * Parses the node in a context created for the given {@code key}.
+     * @param key
+     * @return
+     * @throws IllegalStateException
+     */
+    private Object parseNodeInFreshContext(String key) throws IllegalStateException {
         Supplier<YamlContext<?>> cc = CONTEXT_CONSTRUCTORS.get(parser.peekEvent().getEventId());
         if (cc == null) {
             throw new IllegalStateException("Invalid value in map with key " + key);
@@ -282,6 +228,11 @@ public class YamlContextAwareParser<E> {
         return value;
     }
 
+    /**
+     * Parses the node in a fresh context {@link DefaultObjectContext}.
+     * @return
+     * @throws IllegalStateException
+     */
     private Object parseNodeInFreshContext() throws IllegalStateException {
         contextStack.push(new DefaultObjectContext());
         Object value = parseNode();
