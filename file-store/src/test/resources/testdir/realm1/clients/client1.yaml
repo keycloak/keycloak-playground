@@ -1,0 +1,19 @@
+clientId: https://localhost/client1
+attributes:
+  a: 'c11'
+  b: 
+    - caa
+    - cbb
+    - cbb
+
+protocolMappers:
+  name1:
+    protocolMapper: pm
+    config:
+      pma: a
+      pmb: b
+
+roles:
+  clientRole1:
+    default: false
+
