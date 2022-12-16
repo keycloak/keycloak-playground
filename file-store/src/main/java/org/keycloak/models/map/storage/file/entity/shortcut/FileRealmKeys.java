@@ -9,6 +9,7 @@ import org.keycloak.models.map.storage.file.YamlContext.DefaultListContext;
 import org.keycloak.models.map.storage.file.realm.ComponentsYamlContext;
 import java.util.HashMap;
 import java.util.List;
+import org.keycloak.models.map.common.DeepCloner;
 
 /**
  *
@@ -39,7 +40,7 @@ public class FileRealmKeys implements ShortcutProcessor {
         }
 
         private static MapComponentEntity createKeyComponent() {
-            MapComponentEntity res = new MapComponentEntityImpl();
+            MapComponentEntity res = new MapComponentEntityImpl(DeepCloner.DUMB_CLONER);
             res.setProviderType(KeyProvider.class.getName());
             res.setConfig(new HashMap<>());
             return res;
