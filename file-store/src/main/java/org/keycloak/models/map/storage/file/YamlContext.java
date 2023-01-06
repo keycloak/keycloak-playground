@@ -44,6 +44,10 @@ import java.util.Map;
  */
 public interface YamlContext<V> {
 
+    String getName();
+
+    default void writeValue(Object value, Mech mech) { };
+
     /**
      * Called after reading a key of map entry in YAML file and before reading its value.
      * The key of the entry is represented as {@code nameOfSubcontext} parameter, and
@@ -98,8 +102,26 @@ public interface YamlContext<V> {
      */
     V getResult();
 
-    public static class DefaultObjectContext implements YamlContext<Object> {
+    public abstract class AbstractYamlContext<V> implements YamlContext<V> {
+
+        private final String name;
+
+        public AbstractYamlContext(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String getName() {
+            return name;
+        }
+    }
+
+    public static class DefaultObjectContext extends AbstractYamlContext<Object> {
         private Object result;
+
+        public DefaultObjectContext(String name) {
+            super(name);
+        }
 
         @Override
         public void add(Object value) {
@@ -111,10 +133,20 @@ public interface YamlContext<V> {
             return result;
         }
 
+        @Override
+        public void writeValue(Object value, Mech mech) {
+            mech.addScalar(getName());
+            mech.addScalar(value.toString());
+        };
     }
 
-    public static class DefaultListContext implements YamlContext<List<Object>> {
+    public static class DefaultListContext extends AbstractYamlContext<List<Object>> {
+
         private final List<Object> result = new LinkedList<>();
+
+        public DefaultListContext(String name) {
+            super(name);
+        }
 
         @Override
         public void add(Object value) {
@@ -126,10 +158,24 @@ public interface YamlContext<V> {
             return result;
         }
 
+        @Override
+        public void writeValue(Object value, Mech mech) {
+            mech.addScalar(getName());
+            mech.startSequence();
+            for (Object v : (List) value) {
+                mech.addScalar(v.toString());
+            }
+            mech.endSequence();
+        };
     }
 
-    public static class DefaultMapContext implements YamlContext<Map<String, Object>> {
+    public static class DefaultMapContext extends AbstractYamlContext<Map<String, Object>> {
+
         private final Map<String, Object> result = new LinkedHashMap<>();
+
+        public DefaultMapContext(String name) {
+            super(name);
+        }
 
         @Override
         public void add(String name, Object value) {

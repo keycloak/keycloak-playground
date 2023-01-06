@@ -46,10 +46,14 @@ public class AttributesLikeYamlContext extends DefaultMapContext {
         return new SingletonAttributesMapYamlContext(key);
     }
 
+    public AttributesLikeYamlContext() {
+        super("attributes"); //todo
+    }
+
     @Override
     public YamlContext<?> getContext(String nameOfSubcontext) {
         // regardless of the key name, the values need to be converted into Set<String> which is the purpose of AttributeValueYamlContext
-        return new AttributeValueYamlContext();
+        return new AttributeValueYamlContext(nameOfSubcontext);
     }
 
     private static class Prefixed extends AttributesLikeYamlContext {
@@ -71,6 +75,7 @@ public class AttributesLikeYamlContext extends DefaultMapContext {
         protected final String key;
 
         public SingletonAttributesMapYamlContext(String key) {
+            super("todo");
             this.key = key;
         }
 
@@ -84,6 +89,10 @@ public class AttributesLikeYamlContext extends DefaultMapContext {
     }
 
     public static class AttributeValueYamlContext extends DefaultListContext {
+
+        public AttributeValueYamlContext(String name) {
+            super(name);
+        }
 
         @Override
         public void add(Object value) {

@@ -19,6 +19,10 @@ public class FileRealmKeys implements ShortcutProcessor {
 
     public static class KeysYamlContext extends DefaultListContext {
 
+        public KeysYamlContext() {
+            super("keys");
+        }
+
         @Override
         public YamlContext<?> getContext(String nameOfSubcontext) {
             return new KeyYamlContext() {
