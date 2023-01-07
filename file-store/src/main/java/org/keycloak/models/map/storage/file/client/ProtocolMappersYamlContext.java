@@ -16,29 +16,38 @@
  */
 package org.keycloak.models.map.storage.file.client;
 
-import java.util.List;
-import org.keycloak.models.map.client.MapClientEntityFields;
+import java.util.Collection;
 import org.keycloak.models.map.client.MapProtocolMapperEntity;
 import org.keycloak.models.map.client.MapProtocolMapperEntityFields;
-import org.keycloak.models.map.storage.file.Mech;
-import org.keycloak.models.map.storage.file.realm.MapEntityYamlContext;
+import org.keycloak.models.map.storage.file.YamlContext;
+import org.keycloak.models.map.storage.file.MapEntityYamlContext;
+import org.keycloak.models.map.storage.file.writer.WritingMechanism;
 
 public class ProtocolMappersYamlContext extends MapEntityYamlContext.MapEntitySequenceYamlContext<MapProtocolMapperEntity> {
 
     public ProtocolMappersYamlContext() {
-        super(MapClientEntityFields.PROTOCOL_MAPPERS.getNameCamelCase(), MapProtocolMapperEntity.class);
+        super(MapProtocolMapperEntity.class);
     }
 
+//    name1:
+//      protocolMapper: pm
+//      config:
+//        pma: a
+//        pmb: b
     @Override
-    public void writeValue(Object value, Mech mech) {
-        mech.addScalar(getName());
+    public void writeValue(Collection<Object> value, WritingMechanism mech) {
         mech.startMapping();
-        for (MapProtocolMapperEntity e : (List<MapProtocolMapperEntity>) value) {
+        YamlContext elementContext = getContext("");
+        for (Object o : value) {
+            MapProtocolMapperEntity e = (MapProtocolMapperEntity) o;
             mech.addScalar(e.getName()); // assuming name is specified, todo check name vs id
 
             mech.startMapping();
-            getContext(MapProtocolMapperEntityFields.PROTOCOL_MAPPER.getNameCamelCase()).writeValue(e.getProtocolMapper(), mech);
-            getContext(MapProtocolMapperEntityFields.CONFIG.getNameCamelCase()).writeValue(e.getConfig(), mech);
+            mech.addScalar(MapProtocolMapperEntityFields.PROTOCOL_MAPPER.getNameCamelCase());
+            elementContext.getContext(MapProtocolMapperEntityFields.PROTOCOL_MAPPER.getNameCamelCase()).writeValue(e.getProtocolMapper(), mech);
+
+            mech.addScalar(MapProtocolMapperEntityFields.CONFIG.getNameCamelCase());
+            elementContext.getContext(MapProtocolMapperEntityFields.CONFIG.getNameCamelCase()).writeValue(e.getConfig(), mech);
             mech.endMapping();
         }
         mech.endMapping();

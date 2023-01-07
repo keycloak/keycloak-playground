@@ -16,10 +16,12 @@
  */
 package org.keycloak.models.map.storage.file;
 
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import org.keycloak.models.map.storage.file.writer.WritingMechanism;
 
 /**
  * A class implementing a {@code YamlContext} interface represents a transformer
@@ -44,9 +46,12 @@ import java.util.Map;
  */
 public interface YamlContext<V> {
 
-    String getName();
-
-    default void writeValue(Object value, Mech mech) { };
+    /**
+     * 
+     * @param value
+     * @param mech 
+     */
+    void writeValue(V value, WritingMechanism mech);
 
     /**
      * Called after reading a key of map entry in YAML file and before reading its value.
@@ -63,7 +68,7 @@ public interface YamlContext<V> {
      * @see DefaultListContext
      * @see DefaultMapContext
      */
-    default YamlContext<?> getContext(String nameOfSubcontext) {
+    default <C> YamlContext<C> getContext(String nameOfSubcontext) {
         return null;
     }
 
@@ -102,26 +107,8 @@ public interface YamlContext<V> {
      */
     V getResult();
 
-    public abstract class AbstractYamlContext<V> implements YamlContext<V> {
-
-        private final String name;
-
-        public AbstractYamlContext(String name) {
-            this.name = name;
-        }
-
-        @Override
-        public String getName() {
-            return name;
-        }
-    }
-
-    public static class DefaultObjectContext extends AbstractYamlContext<Object> {
+    public static class DefaultObjectContext implements YamlContext<Object> {
         private Object result;
-
-        public DefaultObjectContext(String name) {
-            super(name);
-        }
 
         @Override
         public void add(Object value) {
@@ -134,19 +121,13 @@ public interface YamlContext<V> {
         }
 
         @Override
-        public void writeValue(Object value, Mech mech) {
-            mech.addScalar(getName());
-            mech.addScalar(value.toString());
-        };
+        public void writeValue(Object value, WritingMechanism mech) {
+            mech.addScalar(value);
+        }
     }
 
-    public static class DefaultListContext extends AbstractYamlContext<List<Object>> {
-
+    public static class DefaultListContext implements YamlContext<Collection<Object>> {
         private final List<Object> result = new LinkedList<>();
-
-        public DefaultListContext(String name) {
-            super(name);
-        }
 
         @Override
         public void add(Object value) {
@@ -154,28 +135,22 @@ public interface YamlContext<V> {
         }
 
         @Override
-        public List<Object> getResult() {
+        public Collection<Object> getResult() {
             return result;
         }
 
         @Override
-        public void writeValue(Object value, Mech mech) {
-            mech.addScalar(getName());
+        public void writeValue(Collection<Object> value, WritingMechanism mech) {
             mech.startSequence();
-            for (Object v : (List) value) {
-                mech.addScalar(v.toString());
+            for (Object v : value) {
+                mech.addScalar(v);
             }
             mech.endSequence();
-        };
+        }
     }
 
-    public static class DefaultMapContext extends AbstractYamlContext<Map<String, Object>> {
-
+    public static class DefaultMapContext implements YamlContext<Map<String, Object>> {
         private final Map<String, Object> result = new LinkedHashMap<>();
-
-        public DefaultMapContext(String name) {
-            super(name);
-        }
 
         @Override
         public void add(String name, Object value) {
@@ -187,6 +162,15 @@ public interface YamlContext<V> {
             return result;
         }
 
+        @Override
+        public void writeValue(Map<String, Object> value, WritingMechanism mech) {
+            mech.startMapping();
+            for (Map.Entry<String, Object> entry : value.entrySet()) {
+                mech.addScalar(entry.getKey());
+                mech.addScalar(entry.getValue());
+            }
+            mech.endMapping();
+        }
     }
 
 }

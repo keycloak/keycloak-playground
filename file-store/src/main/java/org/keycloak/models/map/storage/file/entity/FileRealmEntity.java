@@ -10,7 +10,7 @@ import org.keycloak.models.map.storage.file.annotations.Shortcut;
 import org.keycloak.models.map.storage.file.annotations.YamlContextSupplier;
 import org.keycloak.models.map.storage.file.entity.shortcut.FileRealmBrowserHeaders;
 import org.keycloak.models.map.storage.file.entity.shortcut.FileRealmKeys;
-import org.keycloak.models.map.storage.file.realm.AttributesLikeYamlContext;
+import org.keycloak.models.map.storage.file.AttributesLikeYamlContext;
 import org.keycloak.models.map.storage.file.realm.ComponentsYamlContext;
 
 @GenerateJsonSchema(

@@ -47,10 +47,6 @@ import org.keycloak.models.map.common.DeepCloner;
  */
 public class ComponentsYamlContext extends DefaultListContext {
 
-    public ComponentsYamlContext() {
-        super("components"); //todo
-    }
-
     /**
      * Adds a new component whose representation in YAML is a map where
      * ID is the map {@code key} and {@code value} contains component description.

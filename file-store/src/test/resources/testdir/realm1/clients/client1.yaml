@@ -1,21 +1,35 @@
-clientId: https://localhost/client1
-#attributes:
-#  a: 'c11'
-#  b: 
-#    - caa
-#    - cbb
-#    - cbb
+#+str
+#+doc
+#+map
+schemaVersion: 1
 
-#schemaVersion: 1
+attributes:
+  #+map
+  a: 'c11'
+  b: 
+    #+seq
+    - caa
+    - cbb
+    - cbb
+    #-seq
+  #-map
+
+clientId: https://localhost/client1
 
 protocolMappers:
+  #+map
   name1:
+    #+map
     protocolMapper: pm
     config:
+      #+map
       pma: a
       pmb: b
+      #-map
+    #-map
+  #-map
 
-#roles:
-#  clientRole1:
-#    default: false
+roles:
+  clientRole1:
+    default: false
 

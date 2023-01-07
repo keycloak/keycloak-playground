@@ -1,4 +1,4 @@
-package org.keycloak.models.map.storage.file;
+package org.keycloak.models.map.storage.file.writer;
 
 import java.util.Collections;
 import java.util.List;
@@ -17,15 +17,15 @@ import org.snakeyaml.engine.v2.events.SequenceStartEvent;
  *
  * @author vramik
  */
-public class Mech {
+public class WritingMechanism {
 
     private final List<Event> events;
     private final ImplicitTuple implicitTuple = new ImplicitTuple(true, true);
 
-    public Mech(List<Event> events) {
+    public WritingMechanism(List<Event> events) {
         this.events = events;
     }
-    
+
     public void startMapping() {
         events.add(new MappingStartEvent(Optional.empty(), Optional.empty(), true, FlowStyle.BLOCK));
     }
@@ -42,8 +42,8 @@ public class Mech {
         events.add(new SequenceEndEvent());
     }
 
-    public void addScalar(String value) {
-        events.add(new ScalarEvent(Optional.empty(), Optional.empty(), implicitTuple, value, ScalarStyle.PLAIN));
+    public void addScalar(Object value) {
+        events.add(new ScalarEvent(Optional.empty(), Optional.empty(), implicitTuple, value == null ? null : value.toString(), ScalarStyle.PLAIN));
     }
 
     public List<Event> getEvents() {
