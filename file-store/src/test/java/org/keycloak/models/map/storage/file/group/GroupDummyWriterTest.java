@@ -224,9 +224,9 @@ public class GroupDummyWriterTest {
         client.addRedirectUri("redirect_uri1");
         client.addRedirectUri("redirect_uri2");
         client.addProtocolMapper(pm);
-//        client.setAttribute("a0", List.of("v0"));
-//        client.setAttribute("a1", List.of("v1", "v2"));
-//        client.setAttribute("a2", List.of("v3", "v3", "v4"));
+        client.setAttribute("a0", List.of("v0"));
+        client.setAttribute("a1", List.of("v1", "v2"));
+        client.setAttribute("a2", List.of("v3", "v3", "v4"));
 
         List<Event> events = new LinkedList<>();
         addStartEvents(events);
