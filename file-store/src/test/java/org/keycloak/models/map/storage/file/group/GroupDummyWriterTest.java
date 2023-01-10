@@ -211,10 +211,18 @@ public class GroupDummyWriterTest {
     public void testALittleBitLessDummyWriteClient() throws Exception {
         String realmId = "realm1";
 
-        MapProtocolMapperEntity pm = DeepCloner.DUMB_CLONER.newInstance(MapProtocolMapperEntity.class);
-        pm.setName("pmName");
-        pm.setProtocolMapper("mapper");
-        pm.setConfig(Map.of("key1", "value1", "key2", "value2"));
+        MapProtocolMapperEntity pm0 = DeepCloner.DUMB_CLONER.newInstance(MapProtocolMapperEntity.class);
+        pm0.setName("name0");
+        pm0.setProtocolMapper("pm0");
+        Map<String, String> config = new HashMap<>();
+        config.put("pma", "a");
+        config.put("pmb", null);
+        pm0.setConfig(config);
+
+        MapProtocolMapperEntity pm1 = DeepCloner.DUMB_CLONER.newInstance(MapProtocolMapperEntity.class);
+        pm1.setName("name1");
+        pm1.setProtocolMapper("pm0");
+        pm1.setConfig(Map.of("pma", "a", "pmb", "b"));
 
         MapClientEntity client = DeepCloner.DUMB_CLONER.newInstance(MapClientEntity.class);
 //        client.setId("id1");
@@ -223,10 +231,12 @@ public class GroupDummyWriterTest {
         client.setEnabled(true);
         client.addRedirectUri("redirect_uri1");
         client.addRedirectUri("redirect_uri2");
-        client.addProtocolMapper(pm);
-        client.setAttribute("a0", List.of("v0"));
-        client.setAttribute("a1", List.of("v1", "v2"));
-        client.setAttribute("a2", List.of("v3", "v3", "v4"));
+        client.addProtocolMapper(pm0);
+        client.addProtocolMapper(pm1);
+        client.setAttribute("a0", List.of());
+        client.setAttribute("a1", List.of("v0"));
+        client.setAttribute("a2", List.of("v1", "v2"));
+        client.setAttribute("a3", List.of("v3", "v3", "v4"));
 
         List<Event> events = new LinkedList<>();
         addStartEvents(events);
@@ -239,7 +249,7 @@ public class GroupDummyWriterTest {
     }
 
     private <E> void addEntityWithContext(List<Event> events, E entity, YamlContext<E> initialContext) {
-        initialContext.writeValue(entity, new WritingMechanism(events));
+        initialContext.writeValue(entity, new WritingMechanism(events), () -> {});
     }
 
     private <E> void addEntity(List<Event> events, E entity) {

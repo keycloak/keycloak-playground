@@ -1,5 +1,7 @@
 package org.keycloak.models.map.storage.file.writer;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -55,9 +57,9 @@ public class WritingMechanism {
             return Optional.of("!!str");
         } else if (value instanceof Boolean) {
             return Optional.of("!!bool");
-        } else if (value instanceof Integer) {
+        } else if (value instanceof Integer || value instanceof Long || value instanceof BigInteger) {
             return Optional.of("!!int");
-        } else if (value instanceof Float) {
+        } else if (value instanceof Float || value instanceof Double || value instanceof BigDecimal) {
             return Optional.of("!!float");
         } else if (value == null) {
             return Optional.of("!!null");
@@ -66,9 +68,8 @@ public class WritingMechanism {
         }
     }
 
-    //todo
     private ScalarStyle determineStyle(Object value) {
-        if (value != null && value.toString().contains("\n")) {
+        if (value != null && value instanceof String && ((String) value).contains("\n")) {
             return ScalarStyle.FOLDED;
         }
         return ScalarStyle.PLAIN;

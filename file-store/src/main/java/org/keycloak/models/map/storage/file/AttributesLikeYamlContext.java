@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.keycloak.models.map.storage.file.writer.WritingMechanism;
 
 /**
@@ -54,12 +55,16 @@ public class AttributesLikeYamlContext extends DefaultMapContext {
     }
 
     @Override
-    public void writeValue(Map<String, Object> value, WritingMechanism mech) {
+    public void writeValue(Map<String, Object> value, WritingMechanism mech, Runnable addKeyEvent) {
+        if (value == null || value.isEmpty()) return;
+        addKeyEvent.run();
         mech.startMapping();
         for (Map.Entry<String, Object> entry : value.entrySet()) {
-            mech.addScalar(entry.getKey());
-            Collection<Object> listOfValues = (Collection<Object>) entry.getValue();
-            getContext("").writeValue(listOfValues, mech);
+            Collection<Object> attrValues = (Collection<Object>) entry.getValue();
+
+            getContext("").writeValue(attrValues, mech, () -> {
+                mech.addScalar(entry.getKey());
+            });
         }
         mech.endMapping();
     }
@@ -98,12 +103,14 @@ public class AttributesLikeYamlContext extends DefaultMapContext {
     public static class AttributeValueYamlContext extends DefaultListContext {
 
         @Override
-        public void writeValue(Collection<Object> value, WritingMechanism mech) {
+        public void writeValue(Collection<Object> value, WritingMechanism mech, Runnable addKeyEvent) {
+            if (value == null || value.isEmpty()) return;
+            addKeyEvent.run();
             if (value.size() == 1) {
                 mech.addScalar(value.stream().findAny().orElseThrow());
             } else {
                 //sequence
-                super.writeValue(value, mech);
+                super.writeValue(value, mech, () -> {});
             }
         }
 

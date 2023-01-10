@@ -27,6 +27,15 @@ protocolMappers:
       pmb: b
       #-map
     #-map
+  name2:
+    #+map
+    protocolMapper: pm2
+    config:
+      #+map
+      pma: a
+      pmb: b
+      #-map
+    #-map
   #-map
 
 roles:

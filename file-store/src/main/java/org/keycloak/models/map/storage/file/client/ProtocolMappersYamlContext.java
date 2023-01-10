@@ -35,7 +35,9 @@ public class ProtocolMappersYamlContext extends MapEntityYamlContext.MapEntitySe
 //        pma: a
 //        pmb: b
     @Override
-    public void writeValue(Collection<Object> value, WritingMechanism mech) {
+    public void writeValue(Collection<Object> value, WritingMechanism mech, Runnable addKeyEvent) {
+        if (value == null || value.isEmpty()) return;
+        addKeyEvent.run();
         mech.startMapping();
         YamlContext elementContext = getContext("");
         for (Object o : value) {
@@ -43,11 +45,14 @@ public class ProtocolMappersYamlContext extends MapEntityYamlContext.MapEntitySe
             mech.addScalar(e.getName()); // assuming name is specified, todo check name vs id
 
             mech.startMapping();
-            mech.addScalar(MapProtocolMapperEntityFields.PROTOCOL_MAPPER.getNameCamelCase());
-            elementContext.getContext(MapProtocolMapperEntityFields.PROTOCOL_MAPPER.getNameCamelCase()).writeValue(e.getProtocolMapper(), mech);
 
-            mech.addScalar(MapProtocolMapperEntityFields.CONFIG.getNameCamelCase());
-            elementContext.getContext(MapProtocolMapperEntityFields.CONFIG.getNameCamelCase()).writeValue(e.getConfig(), mech);
+            elementContext.getContext(MapProtocolMapperEntityFields.PROTOCOL_MAPPER.getNameCamelCase()).writeValue(e.getProtocolMapper(), mech, () -> {
+                mech.addScalar(MapProtocolMapperEntityFields.PROTOCOL_MAPPER.getNameCamelCase());
+            });
+            
+            elementContext.getContext(MapProtocolMapperEntityFields.CONFIG.getNameCamelCase()).writeValue(e.getConfig(), mech, () -> {
+                mech.addScalar(MapProtocolMapperEntityFields.CONFIG.getNameCamelCase());
+            });
             mech.endMapping();
         }
         mech.endMapping();

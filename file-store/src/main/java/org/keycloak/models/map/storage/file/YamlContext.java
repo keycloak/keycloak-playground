@@ -51,7 +51,7 @@ public interface YamlContext<V> {
      * @param value
      * @param mech 
      */
-    void writeValue(V value, WritingMechanism mech);
+    void writeValue(V value, WritingMechanism mech, Runnable preTask);
 
     /**
      * Called after reading a key of map entry in YAML file and before reading its value.
@@ -121,7 +121,9 @@ public interface YamlContext<V> {
         }
 
         @Override
-        public void writeValue(Object value, WritingMechanism mech) {
+        public void writeValue(Object value, WritingMechanism mech, Runnable addKeyEvent) {
+            if (value == null) return;
+            addKeyEvent.run();
             mech.addScalar(value);
         }
     }
@@ -140,7 +142,9 @@ public interface YamlContext<V> {
         }
 
         @Override
-        public void writeValue(Collection<Object> value, WritingMechanism mech) {
+        public void writeValue(Collection<Object> value, WritingMechanism mech, Runnable addKeyEvent) {
+            if (value == null || value.isEmpty()) return;
+            addKeyEvent.run();
             mech.startSequence();
             for (Object v : value) {
                 mech.addScalar(v);
@@ -163,7 +167,9 @@ public interface YamlContext<V> {
         }
 
         @Override
-        public void writeValue(Map<String, Object> value, WritingMechanism mech) {
+        public void writeValue(Map<String, Object> value, WritingMechanism mech, Runnable addKeyEvent) {
+            if (value == null || value.isEmpty()) return;
+            addKeyEvent.run();
             mech.startMapping();
             for (Map.Entry<String, Object> entry : value.entrySet()) {
                 mech.addScalar(entry.getKey());

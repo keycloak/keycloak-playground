@@ -160,7 +160,7 @@ public class MapEntityYamlContext<T> implements YamlContext<T> {
     }
 
     @Override
-    public void writeValue(T entity, WritingMechanism mech) {
+    public void writeValue(T entity, WritingMechanism mech, Runnable doNothing) {
         mech.startMapping();
         mech.addScalar("schemaVersion");
         mech.addScalar(1);
@@ -172,12 +172,12 @@ public class MapEntityYamlContext<T> implements YamlContext<T> {
                 if (!ef.getNameCamelCase().equals("id") && !ef.getNameCamelCase().equals("realmId")) {
                     Object fieldVal = ef.get(entity);
                     if (fieldVal != null) {
-                        @SuppressWarnings("unchecked")
+
                         YamlContext context = getContext(contextName);
 
-                        mech.addScalar(contextName);
-
-                        context.writeValue(fieldVal, mech);
+                        context.writeValue(fieldVal, mech, () -> {
+                            mech.addScalar(contextName);
+                        });
                     }
                 }
             }
