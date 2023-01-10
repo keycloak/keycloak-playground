@@ -27,7 +27,7 @@ public class WritingMechanism {
     }
 
     public void startMapping() {
-        events.add(new MappingStartEvent(Optional.empty(), Optional.empty(), true, FlowStyle.BLOCK));
+        events.add(new MappingStartEvent(Optional.empty(), Optional.of("!!map"), true, FlowStyle.BLOCK));
     }
 
     public void endMapping() {
@@ -35,7 +35,7 @@ public class WritingMechanism {
     }
 
     public void startSequence() {
-        events.add(new SequenceStartEvent(Optional.empty(), Optional.empty(), true, FlowStyle.BLOCK));
+        events.add(new SequenceStartEvent(Optional.empty(), Optional.of("!!seq"), true, FlowStyle.BLOCK));
     }
 
     public void endSequence() {
@@ -43,10 +43,34 @@ public class WritingMechanism {
     }
 
     public void addScalar(Object value) {
-        events.add(new ScalarEvent(Optional.empty(), Optional.empty(), implicitTuple, value == null ? null : value.toString(), ScalarStyle.PLAIN));
+        events.add(new ScalarEvent(Optional.empty(), determineTag(value), implicitTuple, value == null ? "null" : value.toString(), determineStyle(value)));
     }
 
     public List<Event> getEvents() {
         return Collections.unmodifiableList(events);
+    }
+
+    private Optional<String> determineTag(Object value) {
+        if (value instanceof String) {
+            return Optional.of("!!str");
+        } else if (value instanceof Boolean) {
+            return Optional.of("!!bool");
+        } else if (value instanceof Integer) {
+            return Optional.of("!!int");
+        } else if (value instanceof Float) {
+            return Optional.of("!!float");
+        } else if (value == null) {
+            return Optional.of("!!null");
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    //todo
+    private ScalarStyle determineStyle(Object value) {
+        if (value != null && value.toString().contains("\n")) {
+            return ScalarStyle.FOLDED;
+        }
+        return ScalarStyle.PLAIN;
     }
 }

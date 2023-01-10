@@ -188,15 +188,15 @@ public class GroupDummyWriterTest {
         parentGroup.setRealmId(realmId);
         parentGroup.setGrantedRoles(Set.of("role1", "role2", "role3"));
         parentGroup.setAttribute("a0", List.of("v0"));
-        parentGroup.setAttribute("a1", List.of("v1, v2"));
-        parentGroup.setAttribute("a2", List.of("v3, v3, v4"));
+        parentGroup.setAttribute("a1", List.of("v1", "v2"));
+        parentGroup.setAttribute("a2", List.of("v3", "v3", "v4"));
 
 //        childGroup.setId("id2");
 //        childGroup.setName("child group");
 //        childGroup.setRealmId(realmId);
 //        childGroup.setParentId(parentGroup.getId());
 //        childGroup.setGrantedRoles(Set.of("role4"));
-
+        
         List<Event> events = new LinkedList<>();
         addStartEvents(events);
 
