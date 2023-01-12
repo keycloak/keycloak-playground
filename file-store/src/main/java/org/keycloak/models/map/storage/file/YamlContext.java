@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import org.keycloak.models.map.common.UndefinedValuesUtils;
 import org.keycloak.models.map.storage.file.writer.WritingMechanism;
+import org.snakeyaml.engine.v2.events.Event;
 
 /**
  * A class implementing a {@code YamlContext} interface represents a transformer
@@ -31,8 +32,8 @@ import org.keycloak.models.map.storage.file.writer.WritingMechanism;
  * the {@link #getResult() resulting instance} of parsing.
  *
  * <p>
- * NOTE: In the future, this transformer might also cover the other direction:
- * conversion from Java object into YAML primitive value / sequence / mapping representation.
+ * It also supports a conversion from Java object into YAML primitive 
+ * value / sequence / mapping representation.
  *
  * <p>
  * This transformer handles only a single nesting level in YAML file. The root level
@@ -48,9 +49,16 @@ import org.keycloak.models.map.storage.file.writer.WritingMechanism;
 public interface YamlContext<V> {
 
     /**
+     * Writes the given value in form of {@link Event}s using {@link WritingMechanism}.
+     * In other words it adds a list of appropriate {@link Event}s into {@link WritingMechanism}
+     * based on {@code value} parameter.
+     * 
+     * {@code preTask} is usually used for adding key scalar for the {@code value} and is
+     * executed after check whether the value is defined.
      * 
      * @param value
      * @param mech 
+     * @param preTask 
      */
     void writeValue(V value, WritingMechanism mech, Runnable preTask);
 

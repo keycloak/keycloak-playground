@@ -3,10 +3,15 @@ package org.keycloak.models.map.storage.file.writer;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import javax.xml.stream.events.StartDocument;
 import org.snakeyaml.engine.v2.common.FlowStyle;
 import org.snakeyaml.engine.v2.common.ScalarStyle;
+import org.snakeyaml.engine.v2.events.DocumentEndEvent;
+import org.snakeyaml.engine.v2.events.DocumentStartEvent;
 import org.snakeyaml.engine.v2.events.Event;
 import org.snakeyaml.engine.v2.events.ImplicitTuple;
 import org.snakeyaml.engine.v2.events.MappingEndEvent;
@@ -16,7 +21,8 @@ import org.snakeyaml.engine.v2.events.SequenceEndEvent;
 import org.snakeyaml.engine.v2.events.SequenceStartEvent;
 
 /**
- *
+ * Mechanism which produces list of {@link Event}s. 
+ * 
  * @author vramik
  */
 public class WritingMechanism {

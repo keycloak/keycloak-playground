@@ -30,11 +30,17 @@ public class ProtocolMappersYamlContext extends MapEntityYamlContext.MapEntitySe
         super(MapProtocolMapperEntity.class);
     }
 
-//    name1:
-//      protocolMapper: pm
-//      config:
-//        pma: a
-//        pmb: b
+    /**
+     * Writes protocol mapper in following format
+     * 
+     * name1:
+     *   protocolMapper: pm
+     *   config:
+     *     pma: a
+     *     pmb: b
+     * 
+     * Note that pm.getName() is used as key, then pm.getProtocolMapper() and pm.getConfig() follows.
+     */
     @Override
     public void writeValue(Collection<Object> value, WritingMechanism mech, Runnable addKeyEvent) {
         if (UndefinedValuesUtils.isUndefined(value)) return;
