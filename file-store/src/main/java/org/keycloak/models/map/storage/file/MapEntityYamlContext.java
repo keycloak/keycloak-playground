@@ -32,6 +32,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.jboss.logging.Logger;
+import org.keycloak.models.map.common.UndefinedValuesUtils;
 
 /**
  * {@link YamlContext} which handles any entity accompanied with {@link EntityField} field getters and setters,
@@ -161,6 +162,7 @@ public class MapEntityYamlContext<T> implements YamlContext<T> {
 
     @Override
     public void writeValue(T entity, WritingMechanism mech, Runnable doNothing) {
+        if (UndefinedValuesUtils.isUndefined(entity)) return;
         mech.startMapping();
         mech.addScalar("schemaVersion");
         mech.addScalar(1);

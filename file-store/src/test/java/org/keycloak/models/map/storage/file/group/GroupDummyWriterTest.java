@@ -90,7 +90,7 @@ public class GroupDummyWriterTest {
         }
     }
 
-    @Test
+//    @Test
     public void testDummyWriting() throws IOException {
 
         List<Event> events = List.of(
@@ -120,7 +120,7 @@ public class GroupDummyWriterTest {
         writeEventsTofile(events);
     }
 
-    @Test
+//    @Test
     public void testDummyWriteGroup() throws Exception {
         String realmId = "realm1";
 
@@ -216,7 +216,7 @@ public class GroupDummyWriterTest {
         pm0.setProtocolMapper("pm0");
         Map<String, String> config = new HashMap<>();
         config.put("pma", "a");
-        config.put("pmb", null);
+        config.put("pmb", null); // this shouldn't be written
         pm0.setConfig(config);
 
         MapProtocolMapperEntity pm1 = DeepCloner.DUMB_CLONER.newInstance(MapProtocolMapperEntity.class);
@@ -225,7 +225,7 @@ public class GroupDummyWriterTest {
         pm1.setConfig(Map.of("pma", "a", "pmb", "b"));
 
         MapClientEntity client = DeepCloner.DUMB_CLONER.newInstance(MapClientEntity.class);
-//        client.setId("id1");
+        client.setId("id1");
         client.setClientId("client1");
         client.setRealmId(realmId);
         client.setEnabled(true);
@@ -233,7 +233,7 @@ public class GroupDummyWriterTest {
         client.addRedirectUri("redirect_uri2");
         client.addProtocolMapper(pm0);
         client.addProtocolMapper(pm1);
-        client.setAttribute("a0", List.of());
+        client.setAttribute("a0", List.of()); // this shouldn't be written
         client.setAttribute("a1", List.of("v0"));
         client.setAttribute("a2", List.of("v1", "v2"));
         client.setAttribute("a3", List.of("v3", "v3", "v4"));

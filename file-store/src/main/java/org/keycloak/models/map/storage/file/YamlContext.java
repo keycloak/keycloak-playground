@@ -21,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import org.keycloak.models.map.common.UndefinedValuesUtils;
 import org.keycloak.models.map.storage.file.writer.WritingMechanism;
 
 /**
@@ -122,7 +123,7 @@ public interface YamlContext<V> {
 
         @Override
         public void writeValue(Object value, WritingMechanism mech, Runnable addKeyEvent) {
-            if (value == null) return;
+            if (UndefinedValuesUtils.isUndefined(value)) return;
             addKeyEvent.run();
             mech.addScalar(value);
         }
@@ -143,7 +144,7 @@ public interface YamlContext<V> {
 
         @Override
         public void writeValue(Collection<Object> value, WritingMechanism mech, Runnable addKeyEvent) {
-            if (value == null || value.isEmpty()) return;
+            if (UndefinedValuesUtils.isUndefined(value)) return;
             addKeyEvent.run();
             mech.startSequence();
             for (Object v : value) {
@@ -168,7 +169,7 @@ public interface YamlContext<V> {
 
         @Override
         public void writeValue(Map<String, Object> value, WritingMechanism mech, Runnable addKeyEvent) {
-            if (value == null || value.isEmpty()) return;
+            if (UndefinedValuesUtils.isUndefined(value)) return;
             addKeyEvent.run();
             mech.startMapping();
             for (Map.Entry<String, Object> entry : value.entrySet()) {

@@ -1,0 +1,44 @@
+#+str
+#+doc
+#+map
+schemaVersion: 1
+
+attributes:
+  #+map
+  a: 'c11'
+  b: 
+    #+seq
+    - caa
+    - cbb
+    - cbb
+    #-seq
+  #-map
+
+clientId: https://localhost/client2
+
+protocolMappers:
+  #+map
+  name1:
+    #+map
+    protocolMapper: pm
+    config:
+      #+map
+      pma: a
+      pmb: b
+      #-map
+    #-map
+  name2:
+    #+map
+    protocolMapper: pm2
+    config:
+      #+map
+      pma: a
+      pmb: b
+      #-map
+    #-map
+  #-map
+
+roles:
+  clientRole1:
+    default: false
+

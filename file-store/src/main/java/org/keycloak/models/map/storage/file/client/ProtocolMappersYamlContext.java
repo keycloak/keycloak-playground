@@ -19,6 +19,7 @@ package org.keycloak.models.map.storage.file.client;
 import java.util.Collection;
 import org.keycloak.models.map.client.MapProtocolMapperEntity;
 import org.keycloak.models.map.client.MapProtocolMapperEntityFields;
+import org.keycloak.models.map.common.UndefinedValuesUtils;
 import org.keycloak.models.map.storage.file.YamlContext;
 import org.keycloak.models.map.storage.file.MapEntityYamlContext;
 import org.keycloak.models.map.storage.file.writer.WritingMechanism;
@@ -36,7 +37,7 @@ public class ProtocolMappersYamlContext extends MapEntityYamlContext.MapEntitySe
 //        pmb: b
     @Override
     public void writeValue(Collection<Object> value, WritingMechanism mech, Runnable addKeyEvent) {
-        if (value == null || value.isEmpty()) return;
+        if (UndefinedValuesUtils.isUndefined(value)) return;
         addKeyEvent.run();
         mech.startMapping();
         YamlContext elementContext = getContext("");
