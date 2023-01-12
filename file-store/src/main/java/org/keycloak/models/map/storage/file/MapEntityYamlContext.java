@@ -163,6 +163,8 @@ public class MapEntityYamlContext<T> implements YamlContext<T> {
     @Override
     public void writeValue(T entity, WritingMechanism mech, Runnable doNothing) {
         if (UndefinedValuesUtils.isUndefined(entity)) return;
+        mech.startStream();
+        mech.startDocument();
         mech.startMapping();
         mech.addScalar("schemaVersion");
         mech.addScalar(1);
@@ -185,6 +187,8 @@ public class MapEntityYamlContext<T> implements YamlContext<T> {
             }
         }
         mech.endMapping();
+        mech.endDocument();
+        mech.endStream();
     }
 
     public static class MapEntitySequenceYamlContext<T> extends DefaultListContext {

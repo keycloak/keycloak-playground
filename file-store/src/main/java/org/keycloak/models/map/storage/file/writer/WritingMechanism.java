@@ -3,11 +3,9 @@ package org.keycloak.models.map.storage.file.writer;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import javax.xml.stream.events.StartDocument;
 import org.snakeyaml.engine.v2.common.FlowStyle;
 import org.snakeyaml.engine.v2.common.ScalarStyle;
 import org.snakeyaml.engine.v2.events.DocumentEndEvent;
@@ -19,6 +17,8 @@ import org.snakeyaml.engine.v2.events.MappingStartEvent;
 import org.snakeyaml.engine.v2.events.ScalarEvent;
 import org.snakeyaml.engine.v2.events.SequenceEndEvent;
 import org.snakeyaml.engine.v2.events.SequenceStartEvent;
+import org.snakeyaml.engine.v2.events.StreamEndEvent;
+import org.snakeyaml.engine.v2.events.StreamStartEvent;
 
 /**
  * Mechanism which produces list of {@link Event}s. 
@@ -27,12 +27,8 @@ import org.snakeyaml.engine.v2.events.SequenceStartEvent;
  */
 public class WritingMechanism {
 
-    private final List<Event> events;
+    private final List<Event> events = new LinkedList<>();
     private final ImplicitTuple implicitTuple = new ImplicitTuple(true, true);
-
-    public WritingMechanism(List<Event> events) {
-        this.events = events;
-    }
 
     public void startMapping() {
         events.add(new MappingStartEvent(Optional.empty(), Optional.of("!!map"), true, FlowStyle.BLOCK));
@@ -52,6 +48,22 @@ public class WritingMechanism {
 
     public void addScalar(Object value) {
         events.add(new ScalarEvent(Optional.empty(), determineTag(value), implicitTuple, value == null ? "null" : value.toString(), determineStyle(value)));
+    }
+
+    public void startStream() {
+        events.add(new StreamStartEvent());
+    }
+
+    public void endStream() {
+        events.add(new StreamEndEvent());
+    }
+
+    public void startDocument() {
+        events.add(new DocumentStartEvent(false, Optional.empty(), Collections.EMPTY_MAP));
+    }
+
+    public void endDocument() {
+        events.add(new DocumentEndEvent(false));
     }
 
     public List<Event> getEvents() {

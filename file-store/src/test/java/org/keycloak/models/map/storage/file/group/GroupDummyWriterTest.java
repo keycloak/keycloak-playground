@@ -197,12 +197,7 @@ public class GroupDummyWriterTest {
 //        childGroup.setParentId(parentGroup.getId());
 //        childGroup.setGrantedRoles(Set.of("role4"));
         
-        List<Event> events = new LinkedList<>();
-        addStartEvents(events);
-
-        addEntityWithContext(events, parentGroup, new MapEntityYamlContext<>(MapGroupEntity.class));
-
-        addEndEvents(events);
+        List<Event> events = addEntityWithContext(parentGroup, new MapEntityYamlContext<>(MapGroupEntity.class));
 
         writeEventsTofile(events);
     }
@@ -238,18 +233,16 @@ public class GroupDummyWriterTest {
         client.setAttribute("a2", List.of("v1", "v2"));
         client.setAttribute("a3", List.of("v3", "v3", "v4"));
 
-        List<Event> events = new LinkedList<>();
-        addStartEvents(events);
 
-        addEntityWithContext(events, client, new ClientYamlContext());
-
-        addEndEvents(events);
+        List<Event> events = addEntityWithContext(client, new ClientYamlContext());
 
         writeEventsTofile(events);
     }
 
-    private <E> void addEntityWithContext(List<Event> events, E entity, YamlContext<E> initialContext) {
-        initialContext.writeValue(entity, new WritingMechanism(events), () -> {});
+    private <E> List<Event> addEntityWithContext(E entity, YamlContext<E> initialContext) {
+        WritingMechanism mech = new WritingMechanism();
+        initialContext.writeValue(entity, mech, () -> {});
+        return mech.getEvents();
     }
 
     private <E> void addEntity(List<Event> events, E entity) {
