@@ -25,6 +25,8 @@ import org.keycloak.models.map.storage.file.writer.WritingMechanism;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.function.Function;
@@ -169,6 +171,11 @@ public class MapEntityYamlContext<T> implements YamlContext<T> {
         mech.addScalar(1);
         TreeSet<String> contextNames = new TreeSet<>(nameToEntityField.keySet());
         contextNames.addAll(contextCreators.keySet());
+
+        // in case there are multiple context names with the same entity fields, e.g. Prefixed attribute
+        // we need to check whether we've already visited the field
+        List<EntityField<T>> visited = new LinkedList<>();
+
         for (String contextName : contextNames) {
             EntityField<T> ef = (EntityField<T>) nameToEntityField.get(contextName);
             if (ef != null) {
@@ -178,9 +185,12 @@ public class MapEntityYamlContext<T> implements YamlContext<T> {
 
                         YamlContext context = getContext(contextName);
 
+                        if (visited.contains(ef)) continue;
+
                         context.writeValue(fieldVal, mech, () -> {
                             mech.addScalar(contextName);
                         });
+                        visited.add(ef);
                     }
                 }
             }

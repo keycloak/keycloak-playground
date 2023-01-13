@@ -69,7 +69,7 @@ public class AttributesLikeYamlContext extends DefaultMapContext {
         mech.endMapping();
     }
 
-    private static class Prefixed extends AttributesLikeYamlContext {
+    public static class Prefixed extends AttributesLikeYamlContext {
 
         protected final String prefix;
 
@@ -81,9 +81,13 @@ public class AttributesLikeYamlContext extends DefaultMapContext {
         public void add(String name, Object value) {
             super.add(prefix + name, value);
         }
+
+        public String getPrefix() {
+            return prefix;
+        }
     }
 
-    private static class SingletonAttributesMapYamlContext extends DefaultMapContext {
+    public static class SingletonAttributesMapYamlContext extends DefaultMapContext {
 
         protected final String key;
 

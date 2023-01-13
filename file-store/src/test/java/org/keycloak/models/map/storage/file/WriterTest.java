@@ -31,9 +31,9 @@ import org.keycloak.models.map.client.MapProtocolMapperEntity;
 import org.keycloak.models.map.common.DeepCloner;
 import org.keycloak.models.map.group.MapGroupEntity;
 import org.keycloak.models.map.group.MapGroupEntityFields;
-import org.keycloak.models.map.storage.file.YamlContext;
+import org.keycloak.models.map.realm.MapRealmEntity;
 import org.keycloak.models.map.storage.file.client.ClientYamlContext;
-import org.keycloak.models.map.storage.file.MapEntityYamlContext;
+import org.keycloak.models.map.storage.file.realm.RealmYamlContext;
 import org.keycloak.models.map.storage.file.writer.WritingMechanism;
 import org.keycloak.models.map.storage.file.writer.WritingMechanismImpl;
 import org.snakeyaml.engine.v2.api.DumpSettings;
@@ -215,6 +215,26 @@ public class WriterTest {
 
 
         List<Event> events = addEntityWithContext(client, new ClientYamlContext());
+
+        writeEventsTofile(events);
+    }
+
+    @Test
+    public void testALittleBitLessDummyWriteRealm() throws Exception {
+        String realmId = "realm1";
+
+        MapRealmEntity realm = DeepCloner.DUMB_CLONER.newInstance(MapRealmEntity.class);
+        realm.setId("id1");
+        realm.setName(realmId);
+        realm.setEnabled(true);
+        realm.setAttribute("a0", List.of()); // this shouldn't be written
+        realm.setAttribute("a1", List.of("v0"));
+        realm.setAttribute("defaultSignatureAlgorithm", List.of("v1"));
+//        realm.setAttribute("actionTokenGeneratedByUserLifespan", List.of("v2"));//todo
+        realm.setAttribute("actionTokenGeneratedByUserLifespan.type1", List.of("v3"));
+        realm.setAttribute("actionTokenGeneratedByUserLifespan.type2", List.of("v4"));
+
+        List<Event> events = addEntityWithContext(realm, new RealmYamlContext());
 
         writeEventsTofile(events);
     }
