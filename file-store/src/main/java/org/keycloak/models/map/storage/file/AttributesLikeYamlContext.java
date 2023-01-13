@@ -20,6 +20,7 @@ import org.keycloak.models.map.storage.file.YamlContext.DefaultMapContext;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.TreeMap;
 import org.keycloak.models.map.common.UndefinedValuesUtils;
 import org.keycloak.models.map.storage.file.writer.WritingMechanism;
 
@@ -58,10 +59,10 @@ public class AttributesLikeYamlContext extends DefaultMapContext {
         if (UndefinedValuesUtils.isUndefined(value)) return;
         addKeyEvent.run();
         mech.startMapping();
-        for (Map.Entry<String, Object> entry : value.entrySet()) {
+        for (Map.Entry<String, Object> entry : new TreeMap<>(value).entrySet()) {
             Collection<Object> attrValues = (Collection<Object>) entry.getValue();
 
-            getContext("").writeValue(attrValues, mech, () -> {
+            getContext(YamlContextAwareParser.ARRAY_CONTEXT).writeValue(attrValues, mech, () -> {
                 mech.addScalar(entry.getKey());
             });
         }

@@ -21,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import org.keycloak.models.map.common.UndefinedValuesUtils;
 import org.keycloak.models.map.storage.file.writer.WritingMechanism;
 import org.snakeyaml.engine.v2.events.Event;
@@ -180,7 +181,7 @@ public interface YamlContext<V> {
             if (UndefinedValuesUtils.isUndefined(value)) return;
             addKeyEvent.run();
             mech.startMapping();
-            for (Map.Entry<String, Object> entry : value.entrySet()) {
+            for (Map.Entry<String, Object> entry : new TreeMap<>(value).entrySet()) {
                 mech.addScalar(entry.getKey());
                 mech.addScalar(entry.getValue());
             }

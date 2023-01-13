@@ -42,6 +42,7 @@ import org.keycloak.models.map.storage.file.YamlContext;
 import org.keycloak.models.map.storage.file.client.ClientYamlContext;
 import org.keycloak.models.map.storage.file.MapEntityYamlContext;
 import org.keycloak.models.map.storage.file.writer.WritingMechanism;
+import org.keycloak.models.map.storage.file.writer.WritingMechanismImpl;
 import org.snakeyaml.engine.v2.api.DumpSettings;
 import org.snakeyaml.engine.v2.api.lowlevel.Present;
 import org.snakeyaml.engine.v2.common.FlowStyle;
@@ -240,8 +241,13 @@ public class GroupDummyWriterTest {
     }
 
     private <E> List<Event> addEntityWithContext(E entity, YamlContext<E> initialContext) {
-        WritingMechanism mech = new WritingMechanism();
-        initialContext.writeValue(entity, mech, () -> {});
+        WritingMechanism mech = new WritingMechanismImpl();
+        initialContext.writeValue(entity, mech, () -> {
+            mech.startStream();
+            mech.startDocument();
+        });
+        mech.endDocument();
+        mech.endStream();
         return mech.getEvents();
     }
 

@@ -22,6 +22,7 @@ import org.keycloak.models.map.client.MapProtocolMapperEntityFields;
 import org.keycloak.models.map.common.UndefinedValuesUtils;
 import org.keycloak.models.map.storage.file.YamlContext;
 import org.keycloak.models.map.storage.file.MapEntityYamlContext;
+import org.keycloak.models.map.storage.file.YamlContextAwareParser;
 import org.keycloak.models.map.storage.file.writer.WritingMechanism;
 
 public class ProtocolMappersYamlContext extends MapEntityYamlContext.MapEntitySequenceYamlContext<MapProtocolMapperEntity> {
@@ -46,7 +47,7 @@ public class ProtocolMappersYamlContext extends MapEntityYamlContext.MapEntitySe
         if (UndefinedValuesUtils.isUndefined(value)) return;
         addKeyEvent.run();
         mech.startMapping();
-        YamlContext elementContext = getContext("");
+        YamlContext elementContext = getContext(YamlContextAwareParser.ARRAY_CONTEXT);
         for (Object o : value) {
             MapProtocolMapperEntity e = (MapProtocolMapperEntity) o;
             mech.addScalar(e.getName()); // assuming name is specified, todo check name vs id
