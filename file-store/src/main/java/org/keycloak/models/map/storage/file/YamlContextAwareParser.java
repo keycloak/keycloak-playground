@@ -109,7 +109,7 @@ public class YamlContextAwareParser<E> {
             throw new IllegalStateException("Aliases are not handled at this moment");
         }
         Event ev = parser.next();
-//        System.out.println("  Parsing " + ev);
+        System.out.println("  Parsing " + ev.getClass().getSimpleName());
         if (!(ev instanceof NodeEvent)) {
             throw new IllegalArgumentException("Invalid event " + ev);
         }
@@ -197,6 +197,7 @@ public class YamlContextAwareParser<E> {
      * Ensure that the next event is the expectedEventId, otherwise throw an exception, and consume that event
      */
     private Event consumeEvent(ID expectedEventId, String message) throws IllegalArgumentException {
+        System.out.println("  Parsing " + expectedEventId);
         if (! parser.checkEvent(expectedEventId)) {
             Event event = parser.next();
             throw new IllegalArgumentException(message + " at " + event.getStartMark());

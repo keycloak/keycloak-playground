@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.keycloak.models.map.common.DeepCloner;
 
 /**
  * <table>
@@ -107,7 +108,7 @@ public class ComponentsYamlContext extends DefaultListContext {
     }
 
     protected MapComponentEntity createComponent() {
-        MapComponentEntity res = new MapComponentEntityImpl();
+        MapComponentEntity res = new MapComponentEntityImpl(DeepCloner.DUMB_CLONER);
         return res;
     }
 

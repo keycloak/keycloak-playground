@@ -19,10 +19,8 @@ package org.keycloak.models.map.storage.file.client;
 import org.keycloak.models.map.client.MapClientEntity;
 import org.keycloak.models.map.client.MapProtocolMapperEntity;
 import org.keycloak.models.map.storage.file.YamlContextAwareParser;
-import org.keycloak.models.map.storage.file.realm.MapEntityYamlContext;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
@@ -31,7 +29,6 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -45,7 +42,7 @@ public class ClientParserTest {
         String realmId = "realm1";
         String clientId = "client1";
         InputStream is = getClass().getResourceAsStream("/testdir/" + realmId + "/clients/" + clientId + ".yaml");
-        MapClientEntity v = YamlContextAwareParser.parse(is, new MapEntityYamlContext<>(MapClientEntity.class));
+        MapClientEntity v = YamlContextAwareParser.parse(is, new ClientYamlContext());
 
         assertThat(v.getClientId(), is("https://localhost/client1"));
 

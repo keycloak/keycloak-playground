@@ -16,14 +16,17 @@
  */
 package org.keycloak.models.map.storage.file.realm;
 
+import org.keycloak.models.map.storage.file.AttributesLikeYamlContext;
 import org.keycloak.models.map.common.EntityField;
 import org.keycloak.models.map.realm.MapRealmEntity;
 import org.keycloak.models.map.realm.MapRealmEntityFields;
 import java.util.Map;
 import org.keycloak.models.map.storage.file.YamlContext;
+import org.keycloak.models.map.storage.file.MapEntityYamlContext;
 import org.keycloak.models.map.storage.file.entity.shortcut.FileRealmBrowserHeaders;
 import org.keycloak.models.map.storage.file.entity.shortcut.FileRealmKeys.KeysYamlContext;
 import java.util.function.Supplier;
+
 
 /**
  *

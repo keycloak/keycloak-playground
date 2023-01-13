@@ -14,13 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.keycloak.models.map.storage.file.realm;
+package org.keycloak.models.map.storage.file;
 
-import org.keycloak.models.map.storage.file.YamlContext;
 import org.keycloak.models.map.storage.file.YamlContext.DefaultMapContext;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedList;
-import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import org.keycloak.models.map.common.UndefinedValuesUtils;
+import org.keycloak.models.map.storage.file.writer.WritingMechanism;
 
 /**
  * YAML parser context which suitable for properties stored in a {@code Map<String, List<String>>}
@@ -47,9 +49,24 @@ public class AttributesLikeYamlContext extends DefaultMapContext {
     }
 
     @Override
-    public YamlContext<?> getContext(String nameOfSubcontext) {
+    public AttributeValueYamlContext getContext(String nameOfSubcontext) {
         // regardless of the key name, the values need to be converted into Set<String> which is the purpose of AttributeValueYamlContext
         return new AttributeValueYamlContext();
+    }
+
+    @Override
+    public void writeValue(Map<String, Object> value, WritingMechanism mech, Runnable addKeyEvent) {
+        if (UndefinedValuesUtils.isUndefined(value)) return;
+        addKeyEvent.run();
+        mech.startMapping();
+        for (Map.Entry<String, Object> entry : new TreeMap<>(value).entrySet()) {
+            Collection<Object> attrValues = (Collection<Object>) entry.getValue();
+
+            getContext(YamlContextAwareParser.ARRAY_CONTEXT).writeValue(attrValues, mech, () -> {
+                mech.addScalar(entry.getKey());
+            });
+        }
+        mech.endMapping();
     }
 
     private static class Prefixed extends AttributesLikeYamlContext {
@@ -84,6 +101,18 @@ public class AttributesLikeYamlContext extends DefaultMapContext {
     }
 
     public static class AttributeValueYamlContext extends DefaultListContext {
+
+        @Override
+        public void writeValue(Collection<Object> value, WritingMechanism mech, Runnable addKeyEvent) {
+            if (UndefinedValuesUtils.isUndefined(value)) return;
+            addKeyEvent.run();
+            if (value.size() == 1) {
+                mech.addScalar(value.stream().findAny().orElseThrow());
+            } else {
+                //sequence
+                super.writeValue(value, mech, () -> {});
+            }
+        }
 
         @Override
         public void add(Object value) {

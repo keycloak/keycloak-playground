@@ -45,7 +45,7 @@ class YamlContextStack extends LinkedList<YamlContext<?>> {
      * The subcontext is created by calling {@link YamlContext#getContext(java.lang.String)}
      * method. If this method returns {@code null}, the control reverts to producing
      * the subcontext using {@code nullProducer} which must return a valid {@link YamlContext}
-     * object (it <b>must not</b> return {@code null).
+     * object (it <b>must not</b> return {@code null}).
      *
      * @param name
      * @param nullProducer

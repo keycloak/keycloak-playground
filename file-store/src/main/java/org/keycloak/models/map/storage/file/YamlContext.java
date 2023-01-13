@@ -16,10 +16,15 @@
  */
 package org.keycloak.models.map.storage.file;
 
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+import org.keycloak.models.map.common.UndefinedValuesUtils;
+import org.keycloak.models.map.storage.file.writer.WritingMechanism;
+import org.snakeyaml.engine.v2.events.Event;
 
 /**
  * A class implementing a {@code YamlContext} interface represents a transformer
@@ -28,8 +33,8 @@ import java.util.Map;
  * the {@link #getResult() resulting instance} of parsing.
  *
  * <p>
- * NOTE: In the future, this transformer might also cover the other direction:
- * conversion from Java object into YAML primitive value / sequence / mapping representation.
+ * It also supports a conversion from Java object into YAML primitive 
+ * value / sequence / mapping representation.
  *
  * <p>
  * This transformer handles only a single nesting level in YAML file. The root level
@@ -43,6 +48,20 @@ import java.util.Map;
  * @param <V> Type of the result
  */
 public interface YamlContext<V> {
+
+    /**
+     * Writes the given value in form of {@link Event}s using {@link WritingMechanism}.
+     * In other words it adds a list of appropriate {@link Event}s into {@link WritingMechanism}
+     * based on {@code value} parameter.
+     * 
+     * {@code preTask} is usually used for adding key scalar for the {@code value} and is
+     * executed after check whether the value is defined.
+     * 
+     * @param value
+     * @param mech 
+     * @param preTask 
+     */
+    void writeValue(V value, WritingMechanism mech, Runnable preTask);
 
     /**
      * Called after reading a key of map entry in YAML file and before reading its value.
@@ -59,7 +78,7 @@ public interface YamlContext<V> {
      * @see DefaultListContext
      * @see DefaultMapContext
      */
-    default YamlContext<?> getContext(String nameOfSubcontext) {
+    default <C> YamlContext<C> getContext(String nameOfSubcontext) {
         return null;
     }
 
@@ -111,9 +130,15 @@ public interface YamlContext<V> {
             return result;
         }
 
+        @Override
+        public void writeValue(Object value, WritingMechanism mech, Runnable addKeyEvent) {
+            if (UndefinedValuesUtils.isUndefined(value)) return;
+            addKeyEvent.run();
+            mech.addScalar(value);
+        }
     }
 
-    public static class DefaultListContext implements YamlContext<List<Object>> {
+    public static class DefaultListContext implements YamlContext<Collection<Object>> {
         private final List<Object> result = new LinkedList<>();
 
         @Override
@@ -122,10 +147,20 @@ public interface YamlContext<V> {
         }
 
         @Override
-        public List<Object> getResult() {
+        public Collection<Object> getResult() {
             return result;
         }
 
+        @Override
+        public void writeValue(Collection<Object> value, WritingMechanism mech, Runnable addKeyEvent) {
+            if (UndefinedValuesUtils.isUndefined(value)) return;
+            addKeyEvent.run();
+            mech.startSequence();
+            for (Object v : value) {
+                mech.addScalar(v);
+            }
+            mech.endSequence();
+        }
     }
 
     public static class DefaultMapContext implements YamlContext<Map<String, Object>> {
@@ -141,6 +176,17 @@ public interface YamlContext<V> {
             return result;
         }
 
+        @Override
+        public void writeValue(Map<String, Object> value, WritingMechanism mech, Runnable addKeyEvent) {
+            if (UndefinedValuesUtils.isUndefined(value)) return;
+            addKeyEvent.run();
+            mech.startMapping();
+            for (Map.Entry<String, Object> entry : new TreeMap<>(value).entrySet()) {
+                mech.addScalar(entry.getKey());
+                mech.addScalar(entry.getValue());
+            }
+            mech.endMapping();
+        }
     }
 
 }

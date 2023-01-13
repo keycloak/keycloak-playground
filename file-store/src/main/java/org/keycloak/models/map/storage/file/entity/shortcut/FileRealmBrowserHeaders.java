@@ -2,7 +2,7 @@ package org.keycloak.models.map.storage.file.entity.shortcut;
 
 import org.keycloak.models.map.storage.file.parser.ShortcutProcessor;
 import org.keycloak.models.map.storage.file.YamlContext;
-import org.keycloak.models.map.storage.file.realm.AttributesLikeYamlContext;
+import org.keycloak.models.map.storage.file.AttributesLikeYamlContext;
 
 /**
  *
