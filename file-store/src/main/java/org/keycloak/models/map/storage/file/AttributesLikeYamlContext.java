@@ -55,18 +55,15 @@ public class AttributesLikeYamlContext extends DefaultMapContext {
     }
 
     @Override
-    public void writeValue(Map<String, Object> value, WritingMechanism mech, Runnable addKeyEvent) {
+    public void writeValue(Map<String, Object> value, WritingMechanism mech) {
         if (UndefinedValuesUtils.isUndefined(value)) return;
-        addKeyEvent.run();
-        mech.startMapping();
-        for (Map.Entry<String, Object> entry : new TreeMap<>(value).entrySet()) {
-            Collection<Object> attrValues = (Collection<Object>) entry.getValue();
-
-            getContext(YamlContextAwareParser.ARRAY_CONTEXT).writeValue(attrValues, mech, () -> {
-                mech.addScalar(entry.getKey());
-            });
-        }
-        mech.endMapping();
+        mech.writeMapping(() -> {
+            AttributeValueYamlContext c = getContext(YamlContextAwareParser.ARRAY_CONTEXT);
+            for (Map.Entry<String, Object> entry : new TreeMap<>(value).entrySet()) {
+                Collection<Object> attrValues = (Collection<Object>) entry.getValue();
+                mech.writePair(entry.getKey(), () -> c.writeValue(attrValues, mech));
+            }
+        });
     }
 
     private static class Prefixed extends AttributesLikeYamlContext {
@@ -103,14 +100,13 @@ public class AttributesLikeYamlContext extends DefaultMapContext {
     public static class AttributeValueYamlContext extends DefaultListContext {
 
         @Override
-        public void writeValue(Collection<Object> value, WritingMechanism mech, Runnable addKeyEvent) {
+        public void writeValue(Collection<Object> value, WritingMechanism mech) {
             if (UndefinedValuesUtils.isUndefined(value)) return;
-            addKeyEvent.run();
             if (value.size() == 1) {
-                mech.addScalar(value.stream().findAny().orElseThrow());
+                mech.writeObject(value.iterator().next());
             } else {
                 //sequence
-                super.writeValue(value, mech, () -> {});
+                super.writeValue(value, mech);
             }
         }
 

@@ -31,11 +31,8 @@ import org.keycloak.models.map.client.MapProtocolMapperEntity;
 import org.keycloak.models.map.common.DeepCloner;
 import org.keycloak.models.map.group.MapGroupEntity;
 import org.keycloak.models.map.group.MapGroupEntityFields;
-import org.keycloak.models.map.storage.file.YamlContext;
 import org.keycloak.models.map.storage.file.client.ClientYamlContext;
-import org.keycloak.models.map.storage.file.MapEntityYamlContext;
-import org.keycloak.models.map.storage.file.writer.WritingMechanism;
-import org.keycloak.models.map.storage.file.writer.WritingMechanismImpl;
+import org.keycloak.models.map.storage.file.writer.YamlWritingMechanism;
 import org.snakeyaml.engine.v2.api.DumpSettings;
 import org.snakeyaml.engine.v2.api.lowlevel.Present;
 import org.snakeyaml.engine.v2.common.FlowStyle;
@@ -56,13 +53,15 @@ public class WriterTest {
 
     final ImplicitTuple implicitTuple = new ImplicitTuple(true, true);
 
-    private void writeEventsTofile(List<Event> events) throws RuntimeException, IOException {
+    private void writeEventsToFile(List<Event> events) throws RuntimeException, IOException {
         DumpSettings settings = DumpSettings.builder().build();
         Present present = new Present(settings);
-        writeTofile(present.emitToString(events.iterator()));
+        writeToFile(present.emitToString(events.iterator()));
     }
 
-    private void writeTofile(String str) throws RuntimeException, IOException {
+
+
+    private void writeToFile(String str) throws RuntimeException, IOException {
         File file = new File("target/test.yaml");
         file.delete();
         if (file.createNewFile()) {
@@ -101,7 +100,7 @@ public class WriterTest {
             new StreamEndEvent()
         );
 
-        writeEventsTofile(events);
+        writeEventsToFile(events);
     }
 
 //    @Test
@@ -160,7 +159,7 @@ public class WriterTest {
         events.add(new DocumentEndEvent(false));
         events.add(new StreamEndEvent());
 
-        writeEventsTofile(events);
+        writeEventsToFile(events);
     }
 
     @Test
@@ -179,7 +178,7 @@ public class WriterTest {
 
         List<Event> events = addEntityWithContext(parentGroup, new MapEntityYamlContext<>(MapGroupEntity.class));
 
-        writeEventsTofile(events);
+        writeEventsToFile(events);
     }
 
     @Test
@@ -213,21 +212,17 @@ public class WriterTest {
         client.setAttribute("a2", List.of("v1", "v2"));
         client.setAttribute("a3", List.of("v3", "v3", "v4"));
 
-
         List<Event> events = addEntityWithContext(client, new ClientYamlContext());
 
-        writeEventsTofile(events);
+        writeEventsToFile(events);
     }
 
     private <E> List<Event> addEntityWithContext(E entity, YamlContext<E> initialContext) {
-        WritingMechanism mech = new WritingMechanismImpl();
-        initialContext.writeValue(entity, mech, () -> {
-            mech.startStream();
-            mech.startDocument();
-        });
-        mech.endDocument();
-        mech.endStream();
-        return mech.getEvents();
+        List<Event> res = new LinkedList<>();
+        try (YamlWritingMechanism mech = new YamlWritingMechanism(res::add)) {
+            initialContext.writeValue(entity, mech);
+        }
+        return res;
     }
 
 }

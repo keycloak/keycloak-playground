@@ -161,31 +161,32 @@ public class MapEntityYamlContext<T> implements YamlContext<T> {
     }
 
     @Override
-    public void writeValue(T entity, WritingMechanism mech, Runnable preTask) {
+    public void writeValue(T entity, WritingMechanism mech) {
         if (UndefinedValuesUtils.isUndefined(entity)) return;
-        preTask.run();
-        mech.startMapping();
-        mech.addScalar("schemaVersion");
-        mech.addScalar(1);
-        TreeSet<String> contextNames = new TreeSet<>(nameToEntityField.keySet());
-        contextNames.addAll(contextCreators.keySet());
-        for (String contextName : contextNames) {
-            EntityField<T> ef = (EntityField<T>) nameToEntityField.get(contextName);
-            if (ef != null) {
-                if (!ef.getNameCamelCase().equals("id") && !ef.getNameCamelCase().equals("realmId")) {
-                    Object fieldVal = ef.get(entity);
-                    if (fieldVal != null) {
 
-                        YamlContext context = getContext(contextName);
+        mech.writeMapping(() -> {
+            mech.writePair("schemaVersion", () -> mech.writeObject(1));
 
-                        context.writeValue(fieldVal, mech, () -> {
-                            mech.addScalar(contextName);
-                        });
-                    }
+            TreeSet<String> contextNames = new TreeSet<>(nameToEntityField.keySet());
+            contextNames.addAll(contextCreators.keySet());
+
+            for (String contextName : contextNames) {
+                EntityField<T> ef = (EntityField<T>) nameToEntityField.get(contextName);
+                if (ef == null) {
+                    continue;
+                }
+
+                if (ef.getNameCamelCase().equals("id") || ef.getNameCamelCase().equals("realmId")) {
+                    continue;
+                }
+
+                Object fieldVal = ef.get(entity);
+                if (fieldVal != null) {
+                    YamlContext context = getContext(contextName);
+                    mech.writePair(contextName, () -> context.writeValue(fieldVal, mech));
                 }
             }
-        }
-        mech.endMapping();
+        });
     }
 
     public static class MapEntitySequenceYamlContext<T> extends DefaultListContext {
