@@ -54,14 +54,10 @@ public interface YamlContext<V> {
      * In other words it adds a list of appropriate {@link Event}s into {@link WritingMechanism}
      * based on {@code value} parameter.
      * 
-     * {@code preTask} is usually used for adding key scalar for the {@code value} and is
-     * executed after check whether the value is defined.
-     * 
      * @param value
      * @param mech 
-     * @param preTask 
      */
-    void writeValue(V value, WritingMechanism mech, Runnable preTask);
+    void writeValue(V value, WritingMechanism mech);
 
     /**
      * Called after reading a key of map entry in YAML file and before reading its value.
@@ -131,10 +127,9 @@ public interface YamlContext<V> {
         }
 
         @Override
-        public void writeValue(Object value, WritingMechanism mech, Runnable addKeyEvent) {
+        public void writeValue(Object value, WritingMechanism mech) {
             if (UndefinedValuesUtils.isUndefined(value)) return;
-            addKeyEvent.run();
-            mech.addScalar(value);
+            mech.writeObject(value);
         }
     }
 
@@ -152,14 +147,9 @@ public interface YamlContext<V> {
         }
 
         @Override
-        public void writeValue(Collection<Object> value, WritingMechanism mech, Runnable addKeyEvent) {
+        public void writeValue(Collection<Object> value, WritingMechanism mech) {
             if (UndefinedValuesUtils.isUndefined(value)) return;
-            addKeyEvent.run();
-            mech.startSequence();
-            for (Object v : value) {
-                mech.addScalar(v);
-            }
-            mech.endSequence();
+            mech.writeSequence(() -> value.forEach(mech::writeObject));
         }
     }
 
@@ -177,15 +167,11 @@ public interface YamlContext<V> {
         }
 
         @Override
-        public void writeValue(Map<String, Object> value, WritingMechanism mech, Runnable addKeyEvent) {
+        public void writeValue(Map<String, Object> value, WritingMechanism mech) {
             if (UndefinedValuesUtils.isUndefined(value)) return;
-            addKeyEvent.run();
-            mech.startMapping();
-            for (Map.Entry<String, Object> entry : new TreeMap<>(value).entrySet()) {
-                mech.addScalar(entry.getKey());
-                mech.addScalar(entry.getValue());
-            }
-            mech.endMapping();
+            mech.writeMapping(() -> {
+                new TreeMap<>(value).forEach((key, val) -> mech.writePair(key, () -> mech.writeObject(val)));
+            });
         }
     }
 

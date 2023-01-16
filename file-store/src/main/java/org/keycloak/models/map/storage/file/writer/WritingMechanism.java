@@ -1,6 +1,5 @@
 package org.keycloak.models.map.storage.file.writer;
 
-import java.util.List;
 import org.snakeyaml.engine.v2.events.Event;
 
 /**
@@ -10,24 +9,12 @@ import org.snakeyaml.engine.v2.events.Event;
  */
 public interface WritingMechanism {
 
-    void addScalar(Object value);
+    WritingMechanism writeObject(Object value);
 
-    void endDocument();
+    WritingMechanism writeSequence(Runnable task);
 
-    void endMapping();
+    WritingMechanism writeMapping(Runnable task);
+    WritingMechanism writePair(String key, Runnable task);
 
-    void endSequence();
-
-    void endStream();
-
-    List<Event> getEvents();
-
-    void startDocument();
-
-    void startMapping();
-
-    void startSequence();
-
-    void startStream();
 
 }

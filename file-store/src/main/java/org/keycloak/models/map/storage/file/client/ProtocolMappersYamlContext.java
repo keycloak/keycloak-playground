@@ -43,26 +43,25 @@ public class ProtocolMappersYamlContext extends MapEntityYamlContext.MapEntitySe
      * Note that pm.getName() is used as key, then pm.getProtocolMapper() and pm.getConfig() follows.
      */
     @Override
-    public void writeValue(Collection<Object> value, WritingMechanism mech, Runnable addKeyEvent) {
+    public void writeValue(Collection<Object> value, WritingMechanism mech) {
         if (UndefinedValuesUtils.isUndefined(value)) return;
-        addKeyEvent.run();
-        mech.startMapping();
-        YamlContext elementContext = getContext(YamlContextAwareParser.ARRAY_CONTEXT);
-        for (Object o : value) {
-            MapProtocolMapperEntity e = (MapProtocolMapperEntity) o;
-            mech.addScalar(e.getName()); // assuming name is specified, todo check name vs id
+        mech.writeMapping(() -> {
+            YamlContext elementContext = getContext(YamlContextAwareParser.ARRAY_CONTEXT);
+            for (Object o : value) {
+                MapProtocolMapperEntity e = (MapProtocolMapperEntity) o;
+                mech.writeObject(e.getName()); // assuming name is specified, todo check name vs id
 
-            mech.startMapping();
-
-            elementContext.getContext(MapProtocolMapperEntityFields.PROTOCOL_MAPPER.getNameCamelCase()).writeValue(e.getProtocolMapper(), mech, () -> {
-                mech.addScalar(MapProtocolMapperEntityFields.PROTOCOL_MAPPER.getNameCamelCase());
-            });
-            
-            elementContext.getContext(MapProtocolMapperEntityFields.CONFIG.getNameCamelCase()).writeValue(e.getConfig(), mech, () -> {
-                mech.addScalar(MapProtocolMapperEntityFields.CONFIG.getNameCamelCase());
-            });
-            mech.endMapping();
-        }
-        mech.endMapping();
+                mech.writeMapping(() -> {
+                    mech.writePair(
+                      MapProtocolMapperEntityFields.PROTOCOL_MAPPER.getNameCamelCase(), 
+                      () -> elementContext.getContext(MapProtocolMapperEntityFields.PROTOCOL_MAPPER.getNameCamelCase()).writeValue(e.getProtocolMapper(), mech)
+                    );
+                    mech.writePair(
+                      MapProtocolMapperEntityFields.CONFIG.getNameCamelCase(),
+                      () -> elementContext.getContext(MapProtocolMapperEntityFields.CONFIG.getNameCamelCase()).writeValue(e.getConfig(), mech)
+                    );
+                });
+            }
+        });
     }
 }
