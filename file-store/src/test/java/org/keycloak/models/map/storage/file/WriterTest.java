@@ -33,10 +33,17 @@ import org.keycloak.models.map.group.MapGroupEntity;
 import org.keycloak.models.map.group.MapGroupEntityFields;
 import org.keycloak.models.map.storage.file.client.ClientYamlContext;
 import org.keycloak.models.map.storage.file.writer.YamlWritingMechanism;
+import java.io.Closeable;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.snakeyaml.engine.v2.api.DumpSettings;
+import org.snakeyaml.engine.v2.api.StreamDataWriter;
 import org.snakeyaml.engine.v2.api.lowlevel.Present;
 import org.snakeyaml.engine.v2.common.FlowStyle;
 import org.snakeyaml.engine.v2.common.ScalarStyle;
+import org.snakeyaml.engine.v2.emitter.Emitter;
 import org.snakeyaml.engine.v2.events.DocumentEndEvent;
 import org.snakeyaml.engine.v2.events.DocumentStartEvent;
 import org.snakeyaml.engine.v2.events.Event;
@@ -53,19 +60,64 @@ public class WriterTest {
 
     final ImplicitTuple implicitTuple = new ImplicitTuple(true, true);
 
+    private final static DumpSettings DUMP_SETTINGS = DumpSettings.builder().build();
+
     private void writeEventsToFile(List<Event> events) throws RuntimeException, IOException {
-        DumpSettings settings = DumpSettings.builder().build();
-        Present present = new Present(settings);
+        Present present = new Present(DUMP_SETTINGS);
         writeToFile(present.emitToString(events.iterator()));
     }
 
+    private <E> void writeEventsToFile(E entity, YamlContext<E> initialContext) throws RuntimeException, IOException {
+        try (DirectFileWriter w = new DirectFileWriter(Path.of("target/test-2.yaml"))) {
+            final Emitter emitter = new Emitter(DUMP_SETTINGS, w);
+            try (YamlWritingMechanism mech = new YamlWritingMechanism(emitter::emit)) {
+                initialContext.writeValue(entity, mech);
+            }
+        }
+    }
 
+    private final class DirectFileWriter extends OutputStreamWriter implements StreamDataWriter, Closeable {
+
+        public DirectFileWriter(Path path) throws IOException {
+            super(Files.newOutputStream(path), StandardCharsets.UTF_8);
+//            final OutputStream os = Files.newOutputStream(path);
+//            this.writer = new OutputStreamWriter(os, StandardCharsets.UTF_8);
+        }
+
+        @Override
+        public void write(String str) {
+            try {
+                super.write(str);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+
+        @Override
+        public void write(String str, int off, int len) {
+            try {
+                super.write(str, off, len);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+
+        @Override
+        public void flush() {
+            try {
+                super.flush();
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+
+    };
 
     private void writeToFile(String str) throws RuntimeException, IOException {
         File file = new File("target/test.yaml");
         file.delete();
         if (file.createNewFile()) {
-            try (FileWriter writer = new FileWriter(file);) {
+            try (FileWriter writer = new FileWriter(file)) {
                 writer.write(str);
             }
         } else {
@@ -176,9 +228,7 @@ public class WriterTest {
         parentGroup.setAttribute("a1", List.of("v1", "v2"));
         parentGroup.setAttribute("a2", List.of("v3", "v3", "v4"));
 
-        List<Event> events = addEntityWithContext(parentGroup, new MapEntityYamlContext<>(MapGroupEntity.class));
-
-        writeEventsToFile(events);
+        writeEventsToFile(parentGroup, new MapEntityYamlContext<>(MapGroupEntity.class));
     }
 
     @Test
@@ -212,9 +262,7 @@ public class WriterTest {
         client.setAttribute("a2", List.of("v1", "v2"));
         client.setAttribute("a3", List.of("v3", "v3", "v4"));
 
-        List<Event> events = addEntityWithContext(client, new ClientYamlContext());
-
-        writeEventsToFile(events);
+        writeEventsToFile(client, new ClientYamlContext());
     }
 
     private <E> List<Event> addEntityWithContext(E entity, YamlContext<E> initialContext) {
