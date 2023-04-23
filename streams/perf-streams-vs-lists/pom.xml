@@ -75,7 +75,7 @@ THE POSSIBILITY OF SUCH DAMAGE.
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-core</artifactId>
-            <version>10.0.1</version>
+            <version>17.0.1</version>
         </dependency>
     </dependencies>
 
