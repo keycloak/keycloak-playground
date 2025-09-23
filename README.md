@@ -12,6 +12,12 @@ The top level directories correspond to features being explored, and contains a 
 of the feature, and one or more subdirectories. Each of the subdirectories represents one alternative
 approach for implementation of the feature.
 
+Some directories may also contain the "playgrounds" or example applications to show specific Keycloak features.
+
+### FAPI playground
+
+Example demo application for showing FAPI feature and some other OAuth/OIDC related features like DPoP. For the details, see the [README file of the FAPI playground](fapi-playground/README.md).
+
 ## Help and Documentation
 
 Please refer to [README.md](https://github.com/keycloak/keycloak/blob/master/README.md)
