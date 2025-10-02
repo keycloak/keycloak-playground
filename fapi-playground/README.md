@@ -25,20 +25,7 @@ On linux, the easiest is to edit `/etc/hosts` file and add the host similar to t
 
 ## Build this project
 
-This project is tested with OpenJDK 21 and Maven 3.9.9
-
-### Temp: Build Keycloak
-
-It is temporarily needed to build Keycloak as project has dependency on Keycloak snapshot. You can either edit your `pom.xml` to allow downloading snapshots, but
-maybe easier is to build Keycloak on your laptop to make sure that snapshot artifacts available in your local repository. Some possible steps to do it:
-
-```
-git clone git@github.com:keycloak/keycloak.git
-cd keycloak
-mvn clean install -DskipTests=true -Pdistribution
-```
-
-_TODO: Remove this requirement and update dependency on released 26.4.0 Keycloak once it is released. Also might allow to remove --features=dpop from the startup command below_
+This project is tested with OpenJDK 21 and Maven 3.9.9 and Keycloak 26.4.0 release
 
 ### Build project
 
@@ -48,8 +35,6 @@ mvn clean install
 ```
 
 ## Start and prepare keycloak
-
-This was tested with OpenJDK 21 and Keycloak nightly distribution (before 26.4.0 release) 
 
 1) Copy keystore + truststore to the Keycloak distribution:
 ```
@@ -61,7 +46,7 @@ cp keystores/keycloak.* $KEYCLOAK_HOME/bin
 cd $KEYCLOAK_HOME/bin
 ./kc.sh start --hostname=as.keycloak-fapi.org --https-key-store-file=keycloak.jks --https-key-store-password=secret \
 --https-trust-store-file=keycloak.truststore --https-trust-store-password=secret \
---https-client-auth=request --features=dpop
+--https-client-auth=request
 ```
 
 
@@ -79,37 +64,25 @@ later use in the demo. For demo purposes, use bigger number of clients (EG. 99).
 
 ## Start example app and deploy the example
 
-1) Unzip Wildlfy 33.0.1 to some directory. Will be referred as `$APP_HOME`
-
-2) Copy keystore and truststore:
+1) Start application by running
 ```
-cp keystores/keycloak.truststore $APP_HOME/standalone/configuration/
-cp keystores/client.jks $APP_HOME/standalone/configuration/
+mvn quarkus:run
 ```
 
-3) Deploy the application:
-```
-cp target/fapi-demo.war $APP_HOME/standalone/deployments/
-```
-
-3) Start the wildfly server:
-```
-cd $APP_HOME/bin
-./standalone.sh -b app.keycloak-fapi.org -Djboss.socket.binding.port-offset=100
-```
+For debugging, it is possible to use `mvn quarkus:dev` (However application is then running on https://localhost:8543 )
 
 ## Demo
 
 ### FAPI 1 Demo
 
-1) Go to `https://app.keycloak-fapi.org:8543/fapi-demo` 
+1) Go to `https://app.keycloak-fapi.org:8543` 
 
 __2) No FAPI yet__
 
 2.a) In the `Client Registration` part, you can provide Initial access token from Keycloak (See above) and register some client. Can be for example
 public client (Switch `Client authentication method` can be switched to `none`)
 
-2.b) You can click `Create Login URL` and click `Login` . After user authentication, you can be redirected back to the application.
+2.b) You can click `Create Login URL` and click `Login` . After user authentication, you will be redirected back to the application.
 You should see 200 from token response. No FAPI is involved yet. You can see that tokens don't have `nonce` claim in it (Tokens can be seen by click on the button `Show Last tokens`) 
 
 __3) Fapi Baseline test__
@@ -169,7 +142,7 @@ OIDC client in the Keycloak admin console (See Server administration guide for m
 must be checked. Login without DPoP will not work and Token Request will return 400 HTTP error as DPoP is mandatory for the client with this switch enabled.
 
 __6) DPoP Enforcer executor__ - In the Keycloak admin console, in the tab `Realm settings` -> tab `Client policies` -> tab `Profiles`, you can create new client profile called for example `dpop-profile` and 
-add the client policy executor `dpop-enforcer-executor` to this profile. Configure executor according your preference. Then in the `Realm settings` -> `Client policies` -> `Policies`
+add the client policy executor `dpop-bind-enforcer` executor to this profile. Configure executor according your preference. Then in the `Realm settings` -> `Client policies` -> `Policies`
 you can create client policy `dpop-policy` with condition `any-client` and link to the `dpop-profile` client profile.
 
 6.a) In the FAPI playground application, you can register new client. If `Auto configure` was enabled for the client policy executor created above, then new client will have
@@ -179,6 +152,20 @@ you can create client policy `dpop-policy` with condition `any-client` and link 
 for the successful login.
 
 
+## Test with latest Keycloak nightly 
+
+1) Build Keycloak
+
+It may be good to build Keycloak as project has dependency on Keycloak snapshot. You can either edit your `pom.xml` to allow downloading snapshots from last nightly build, but
+maybe easier is to build Keycloak on your laptop to make sure that snapshot artifacts available in your local repository. Some possible steps to do it:
+
+```
+git clone git@github.com:keycloak/keycloak.git
+cd keycloak
+mvn clean install -DskipTests=true -Pdistribution
+```
+
+2) Update in `pom.xml` and set `keycloak.version` property to `999.0.0-SNAPSHOT` .
 
 ## Contributions
 
@@ -194,13 +181,9 @@ Possible contribution tips:
 3) Make it working without a need to fork `OAuthClient` utilities from Keycloak codebase. The package `org.keycloak.example.oauth` contains lots of
 classes copied from Keycloak module https://github.com/keycloak/keycloak/tree/main/test-framework/oauth . Instead of forking classes, it can be good to use
 directly the Keycloak classes and have dependency on that Keycloak module. It failed for me due the `keycloak-test-framework-oauth` module has dependency on `keycloak-services`,
-which has many other 3rd party dependencies and this caused some issues when this was deployed on WildFly.
+which caused the issues on WildFly, but now since application is on Quarkus, it might be possible to do this.
 
-How to possibly fix this:
-
-3.a) Use Quarkus instead of WildFly (See step 2). But not sure if it helps... 
-
-3.b) Make sure that Keycloak `keycloak-test-framework-oauth` module from test-framework does not have dependencies on `keycloak-services` (will require some changes in the Keycloak itself). There is
+If there are still issues, it can maybe help if  Keycloak `keycloak-test-framework-oauth` module from test-framework does not have dependencies on `keycloak-services` (will require some changes in the Keycloak itself). There is
 maybe not so much changes needed as `keycloak-test-framework-oauth` client has mostly dependencies on various constants and minor utilities from `keycloak-services`. 
 
 4) Add some other FAPI/OAuth/OIDC related functionality to this demo (EG. OIDC4VCI or something else)

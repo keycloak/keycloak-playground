@@ -20,8 +20,11 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultRedirectStrategy;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.jboss.logging.Logger;
 import org.keycloak.common.util.Base64Url;
 import org.keycloak.common.util.KeystoreUtil;
+
+import static org.keycloak.example.util.MyConstants.KEYSTORES_DIR;
 
 /**
  * Utilities for Holder of key mechanism and other Mutual TLS tests.
@@ -31,9 +34,13 @@ import org.keycloak.common.util.KeystoreUtil;
  */
 public class MutualTLSUtils {
 
-    public static final String DEFAULT_KEYSTOREPATH = System.getProperty("jboss.server.config.dir") + "/client.jks";
+    private static final Logger log = Logger.getLogger(MutualTLSUtils.class);
+
+    public static final String HOME_DIR;
+
+    public static final String DEFAULT_KEYSTOREPATH;
     public static final String DEFAULT_KEYSTOREPASSWORD = "secret";
-    public static final String DEFAULT_TRUSTSTOREPATH = System.getProperty("jboss.server.config.dir") + "/keycloak.truststore";
+    public static final String DEFAULT_TRUSTSTOREPATH;
     public static final String DEFAULT_TRUSTSTOREPASSWORD = "secret";
 
     public static final String OTHER_KEYSTOREPATH = System.getProperty("hok.client.certificate.keystore");
@@ -43,6 +50,18 @@ public class MutualTLSUtils {
     // like "jurisdictionCountryName", "businessCategory", "serialNumber" . These OIDs are used by OpenBanking Brasil
     public static final String OBB_KEYSTOREPATH = System.getProperty("obb.client.certificate.keystore");
     public static final String OBB_KEYSTOREPASSWORD = System.getProperty("obb.client.certificate.keystore.passphrase");
+
+    static {
+        String classPath = System.getProperty("java.class.path");
+        log.infof("Classpath JAR: %s", classPath);
+
+        int index = classPath.indexOf(MyConstants.PROJECT_DIR_NAME);
+        if (index == -1) throw new RuntimeException("Not able to find root directory from classpath. Classpath is " + classPath);
+        index = index + MyConstants.PROJECT_DIR_NAME.length();
+        HOME_DIR = classPath.substring(0, index);
+        DEFAULT_KEYSTOREPATH = HOME_DIR + "/" + KEYSTORES_DIR + "/client.jks";
+        DEFAULT_TRUSTSTOREPATH = HOME_DIR + "/" + KEYSTORES_DIR + "/keycloak.truststore";
+    }
 
     public static CloseableHttpClient newCloseableHttpClientWithDefaultKeyStoreAndTrustStore() {
         return newCloseableHttpClient(DEFAULT_KEYSTOREPATH, DEFAULT_KEYSTOREPASSWORD, DEFAULT_TRUSTSTOREPATH, DEFAULT_TRUSTSTOREPASSWORD);

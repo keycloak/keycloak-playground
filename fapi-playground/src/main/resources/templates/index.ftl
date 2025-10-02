@@ -1,7 +1,7 @@
 <html>
     <head>
         <title>FAPI demo</title>
-        <link rel="stylesheet" type="text/css" href="https://app.keycloak-fapi.org:8543/fapi-demo/styles.css"/>
+        <link rel="stylesheet" type="text/css" href="${url.cssUrl}"/>
     </head>
     <body>
         <h1>FAPI playground</h1>

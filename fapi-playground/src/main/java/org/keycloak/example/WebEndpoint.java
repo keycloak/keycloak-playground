@@ -11,6 +11,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.vertx.core.http.HttpServerRequest;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.HttpMethod;
 import jakarta.ws.rs.NotFoundException;
@@ -20,11 +21,11 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.cache.NoCache;
-import org.jboss.resteasy.spi.HttpRequest;
+import org.jboss.resteasy.reactive.server.multipart.MultipartFormDataInput;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.common.util.SecretGenerator;
 import org.keycloak.common.util.StreamUtil;
@@ -78,7 +79,13 @@ public class WebEndpoint {
     private HttpHeaders headers;
 
     @Context
-    private HttpRequest request;
+    private UriInfo uriInfo;
+
+    @Context
+    HttpServerRequest request;
+
+    // @Context
+    // private HttpRequest request;
 
     Map<String, Object> fmAttributes = new HashMap<>();
 
@@ -92,7 +99,7 @@ public class WebEndpoint {
 
     private Response renderHtml() {
         fmAttributes.put("serverInfo", new ServerInfoBean());
-        fmAttributes.put("url", new UrlBean());
+        fmAttributes.put("url", new UrlBean(uriInfo));
         fmAttributes.put("clientConfigCtx", Services.instance().getSession().getClientConfigContext());
         fmAttributes.put("oidcConfigCtx", Services.instance().getSession().getOidcConfigContext());
         return Services.instance().getFreeMarker().processTemplate(fmAttributes, "index.ftl");
@@ -119,9 +126,11 @@ public class WebEndpoint {
     @Produces("text/html")
     @NoCache
     @Path("/action")
-    public Response processAction() {
-        MultivaluedMap<String, String> params = request.getDecodedFormParameters();
-        String action = params.getFirst("my-action");
+    public Response processAction(MultipartFormDataInput formData) {
+        Map<String, String> params = formData.getValues().entrySet()
+                .stream()
+                .collect(Collectors.toMap(value -> value.getKey(), value -> value.getValue().iterator().next().getValue()));
+        String action = params.get("my-action");
         SessionData session = Services.instance().getSession();
         WebRequestContext<AbstractHttpPostRequest, AccessTokenResponse> lastTokenResponse = session.getTokenRequestCtx();
         try {
@@ -188,7 +197,7 @@ public class WebEndpoint {
                     session.setAuthenticationRequestUrl(authRequestUrl);
                     break;
                 case "process-fragment":
-                    String authzResponseUrl = params.getFirst("authz-response-url");
+                    String authzResponseUrl = params.get("authz-response-url");
                     int fragmentIndex = authzResponseUrl.indexOf('#');
                     if (fragmentIndex == -1) {
                         throw new MyException("Fragment did not found in the URL " + authzResponseUrl);
@@ -315,21 +324,21 @@ public class WebEndpoint {
         return renderHtml();
     }
 
-    private ClientConfigContext collectClientConfigParams(MultivaluedMap<String, String> params, SessionData session) {
-        String initToken = params.getFirst("init-token");
-        String clientAuthMethod = params.getFirst("client-auth-method");
-        boolean generateJwks = params.getFirst("jwks") != null;
+    private ClientConfigContext collectClientConfigParams(Map<String, String> params, SessionData session) {
+        String initToken = params.get("init-token");
+        String clientAuthMethod = params.get("client-auth-method");
+        boolean generateJwks = params.get("jwks") != null;
         ClientConfigContext clientCtx = new ClientConfigContext(initToken, clientAuthMethod, generateJwks);
         session.setClientConfigContext(clientCtx);
         return clientCtx;
     }
 
-    private OIDCFlowConfigContext collectOIDCFlowConfigParams(MultivaluedMap<String, String> params, SessionData session) {
-        boolean pkce = params.getFirst("pkce") != null;
-        boolean nonce = params.getFirst("nonce") != null;
-        boolean requestObject = params.getFirst("request-object") != null;
-        boolean useDPoP = params.getFirst("dpop") != null;
-        boolean useDPoPJKT = params.getFirst("dpop-authz-code-binding") != null;
+    private OIDCFlowConfigContext collectOIDCFlowConfigParams(Map<String, String> params, SessionData session) {
+        boolean pkce = params.get("pkce") != null;
+        boolean nonce = params.get("nonce") != null;
+        boolean requestObject = params.get("request-object") != null;
+        boolean useDPoP = params.get("dpop") != null;
+        boolean useDPoPJKT = params.get("dpop-authz-code-binding") != null;
 //        if (useDPoPJKT && !useDPoP) {
 //            throw new MyException("Incorrect to disable 'Use DPoP' and enable 'Use DPoP Authorization Code Binding' at the same time");
 //        }
@@ -350,10 +359,10 @@ public class WebEndpoint {
         if (code == null && error == null) {
             // Fragment response mode
             fmAttributes.put("serverInfo", new ServerInfoBean());
-            fmAttributes.put("url", new UrlBean());
+            fmAttributes.put("url", new UrlBean(uriInfo));
             return Services.instance().getFreeMarker().processTemplate(fmAttributes, "code-parser.ftl");
         }
-        return handleLoginCallback(code, error, errorDescription, request.getUri().getRequestUri().toString());
+        return handleLoginCallback(code, error, errorDescription, uriInfo.getRequestUri().toString());
     }
 
     private Response handleLoginCallback(String code, String error, String errorDescription, String origAuthzResponseUrl) {
@@ -465,7 +474,7 @@ public class WebEndpoint {
     private OIDCClientRepresentation createClientToRegister(String clientAuthMethod, boolean generateJwks) {
         OIDCClientRepresentation client = new OIDCClientRepresentation();
         client.setClientName("my fapi client");
-        UrlBean urls = new UrlBean();
+        UrlBean urls = new UrlBean(uriInfo);
         client.setClientUri(urls.getBaseUrl());
         client.setRedirectUris(Collections.singletonList(urls.getClientRedirectUri()));
         client.setTokenEndpointAuthMethod(clientAuthMethod);
@@ -496,7 +505,7 @@ public class WebEndpoint {
         requestObject.nbf(requestObject.getIat());
         requestObject.setClientId(clientId);
         requestObject.setResponseType("code id_token");
-        requestObject.setRedirectUriParam(new UrlBean().getClientRedirectUri());
+        requestObject.setRedirectUriParam(new UrlBean(uriInfo).getClientRedirectUri());
         requestObject.setScope("openid");
         String state = UUIDUtil.generateId();
         requestObject.setState(state);

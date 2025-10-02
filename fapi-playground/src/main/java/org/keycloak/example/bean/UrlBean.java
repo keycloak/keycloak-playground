@@ -1,8 +1,6 @@
 package org.keycloak.example.bean;
 
-import org.jboss.resteasy.spi.HttpRequest;
-import org.jboss.resteasy.spi.ResteasyProviderFactory;
-import org.keycloak.example.Services;
+import jakarta.ws.rs.core.UriInfo;
 import org.keycloak.example.util.MyConstants;
 
 /**
@@ -12,8 +10,8 @@ public class UrlBean {
 
     private final String baseUrl;
 
-    public UrlBean() {
-        String baseUrl = ResteasyProviderFactory.getInstance().getContextData(HttpRequest.class).getUri().getBaseUri().toString();
+    public UrlBean(UriInfo uriInfo) {
+        String baseUrl = uriInfo.getBaseUri().toString();
         if (baseUrl.endsWith("/")) {
             baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
         }
@@ -30,6 +28,10 @@ public class UrlBean {
 
     public String getClientRedirectUri() {
         return baseUrl + "/login-callback";
+    }
+
+    public String getCssUrl() {
+        return baseUrl + "/styles.css";
     }
 
     public String getAccountConsoleUrl() {
