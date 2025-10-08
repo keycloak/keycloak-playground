@@ -2,8 +2,8 @@ package org.keycloak.example.util;
 
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.keycloak.OAuth2Constants;
-import org.keycloak.example.oauth.AbstractOAuthClient;
-import org.keycloak.example.oauth.OAuthClientConfig;
+import org.keycloak.testsuite.util.oauth.AbstractOAuthClient;
+import org.keycloak.testsuite.util.oauth.OAuthClientConfig;
 
 /**
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
@@ -11,7 +11,7 @@ import org.keycloak.example.oauth.OAuthClientConfig;
 public class OAuthClient extends AbstractOAuthClient<OAuthClient> {
 
     public OAuthClient(String baseUrl, CloseableHttpClient httpClient) {
-        super(baseUrl, httpClient);
+        super(baseUrl, httpClient, null);
 
         config = new OAuthClientConfig()
                 .responseType(OAuth2Constants.CODE);
@@ -28,5 +28,7 @@ public class OAuthClient extends AbstractOAuthClient<OAuthClient> {
 
     public void close() {
     }
+
+
 
 }

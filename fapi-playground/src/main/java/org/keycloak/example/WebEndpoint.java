@@ -34,14 +34,6 @@ import org.keycloak.example.bean.AuthorizationEndpointRequestObject;
 import org.keycloak.example.bean.InfoBean;
 import org.keycloak.example.bean.ServerInfoBean;
 import org.keycloak.example.bean.UrlBean;
-import org.keycloak.example.oauth.AbstractHttpPostRequest;
-import org.keycloak.example.oauth.AccessTokenRequest;
-import org.keycloak.example.oauth.AccessTokenResponse;
-import org.keycloak.example.oauth.LoginUrlBuilder;
-import org.keycloak.example.oauth.PkceGenerator;
-import org.keycloak.example.oauth.RefreshRequest;
-import org.keycloak.example.oauth.UserInfoRequest;
-import org.keycloak.example.oauth.UserInfoResponse;
 import org.keycloak.example.util.ClientConfigContext;
 import org.keycloak.example.util.ClientRegistrationWrapper;
 import org.keycloak.example.util.DPoPContext;
@@ -49,8 +41,8 @@ import org.keycloak.example.util.KeysWrapper;
 import org.keycloak.example.util.MyConstants;
 import org.keycloak.example.util.MyException;
 import org.keycloak.example.util.OAuthClient;
+import org.keycloak.example.util.OAuthClientUtil;
 import org.keycloak.example.util.OIDCFlowConfigContext;
-import org.keycloak.example.util.OIDCLoginProtocol;
 import org.keycloak.example.util.SessionData;
 import org.keycloak.example.util.UUIDUtil;
 import org.keycloak.example.util.WebRequestContext;
@@ -58,12 +50,21 @@ import org.keycloak.jose.jwk.JSONWebKeySet;
 import org.keycloak.jose.jws.JWSHeader;
 import org.keycloak.jose.jws.JWSInput;
 import org.keycloak.jose.jws.JWSInputException;
+import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 import org.keycloak.protocol.oidc.representations.OIDCConfigurationRepresentation;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.IDToken;
 import org.keycloak.representations.RefreshToken;
 import org.keycloak.representations.dpop.DPoP;
 import org.keycloak.representations.oidc.OIDCClientRepresentation;
+import org.keycloak.testsuite.util.oauth.AbstractHttpPostRequest;
+import org.keycloak.testsuite.util.oauth.AccessTokenRequest;
+import org.keycloak.testsuite.util.oauth.AccessTokenResponse;
+import org.keycloak.testsuite.util.oauth.LoginUrlBuilder;
+import org.keycloak.testsuite.util.oauth.PkceGenerator;
+import org.keycloak.testsuite.util.oauth.RefreshRequest;
+import org.keycloak.testsuite.util.oauth.UserInfoRequest;
+import org.keycloak.testsuite.util.oauth.UserInfoResponse;
 import org.keycloak.util.JWKSUtils;
 import org.keycloak.util.JsonSerialization;
 
@@ -83,9 +84,6 @@ public class WebEndpoint {
 
     @Context
     HttpServerRequest request;
-
-    // @Context
-    // private HttpRequest request;
 
     Map<String, Object> fmAttributes = new HashMap<>();
 
@@ -277,7 +275,8 @@ public class WebEndpoint {
                                 WebRequestContext<AbstractHttpPostRequest, AccessTokenResponse> refreshedTokenResponse = sendTokenRefresh(session);
                                 session.setTokenRequestCtx(new WebRequestContext<>(refreshedTokenResponse.getRequest(), refreshedTokenResponse.getResponse()));
 
-                                info.addOutput("Refresh token request", JsonSerialization.writeValueAsPrettyString(refreshedTokenResponse.getRequest().getRequestInfo()))
+                                Map<String, Object> requestInfo = OAuthClientUtil.getRequestInfo(refreshedTokenResponse.getRequest());
+                                info.addOutput("Refresh token request", JsonSerialization.writeValueAsPrettyString(requestInfo))
                                         .addOutput("Refresh token response", JsonSerialization.writeValueAsPrettyString(refreshedTokenResponse.getResponse()));
                             }
                         } catch (IOException ioe) {
@@ -299,7 +298,8 @@ public class WebEndpoint {
 
                                 WebRequestContext<UserInfoRequest, UserInfoResponse> userInfo = sendUserInfo(session);
 
-                                info.addOutput("User Info request", JsonSerialization.writeValueAsPrettyString(userInfo.getRequest().getRequestInfo()))
+                                Map<String, Object> reqInfo = OAuthClientUtil.getRequestInfo(userInfo.getRequest());
+                                info.addOutput("User Info request", JsonSerialization.writeValueAsPrettyString(reqInfo))
                                         .addOutput("User Info response", JsonSerialization.writeValueAsPrettyString(userInfo.getResponse()));
                             }
                         } catch (IOException ioe) {
@@ -403,7 +403,8 @@ public class WebEndpoint {
     }
 
     private void infoTokenRequestAndResponse(InfoBean info, AbstractHttpPostRequest tokenRequest, AccessTokenResponse tokenResponse) throws IOException {
-        info.addOutput("Token request", JsonSerialization.writeValueAsPrettyString(tokenRequest.getRequestInfo()))
+        Map<String, Object> requestInfo = OAuthClientUtil.getRequestInfo(tokenRequest);
+        info.addOutput("Token request", JsonSerialization.writeValueAsPrettyString(requestInfo))
                 .addOutput("Token response", JsonSerialization.writeValueAsPrettyString(tokenResponse));
     }
 

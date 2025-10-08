@@ -3,9 +3,9 @@ package org.keycloak.example.bean;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.constants.AdapterConstants;
-import org.keycloak.example.util.CibaGrantType;
-import org.keycloak.example.util.OIDCLoginProtocol;
 import org.keycloak.models.Constants;
+import org.keycloak.protocol.oidc.OIDCLoginProtocol;
+import org.keycloak.protocol.oidc.grants.ciba.CibaGrantType;
 import org.keycloak.representations.JsonWebToken;
 
 /**

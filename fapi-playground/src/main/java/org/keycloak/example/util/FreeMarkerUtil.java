@@ -12,6 +12,7 @@ import freemarker.core.HTMLOutputFormat;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import jakarta.ws.rs.core.Response;
+import org.keycloak.utils.MediaType;
 
 /**
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>

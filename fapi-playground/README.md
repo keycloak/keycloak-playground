@@ -169,26 +169,18 @@ mvn clean install -DskipTests=true -Pdistribution
 
 ## Contributions
 
-Anyone is welcome to use this demo according with the licence and feel free to use it in your own presentations for FAPI or OAuth2
+Anyone is welcome to use this demo according with the licence and feel free to use it in your own presentations for FAPI, OAuth2, OIDC, DPoP or anything else.
 Contributions are welcome. Please send PR to this repository with the possible contributions.
 
 Possible contribution tips:
 
 1) Automated tests (ideally with the use of Junit5 and Keycloak test framework - https://www.keycloak.org/2024/11/preview-keycloak-test-framework )
 
-2) Deploy FAPI playground on Quarkus instead of WildFly
+2) Update to newer version of Keycloak (might need to update dependencies in `pom.xml`. Maybe code as well if something changed)
 
-3) Make it working without a need to fork `OAuthClient` utilities from Keycloak codebase. The package `org.keycloak.example.oauth` contains lots of
-classes copied from Keycloak module https://github.com/keycloak/keycloak/tree/main/test-framework/oauth . Instead of forking classes, it can be good to use
-directly the Keycloak classes and have dependency on that Keycloak module. It failed for me due the `keycloak-test-framework-oauth` module has dependency on `keycloak-services`,
-which caused the issues on WildFly, but now since application is on Quarkus, it might be possible to do this.
+3) Add some other FAPI/OAuth/OIDC related functionality to this demo (EG. OIDC4VCI or something else)
 
-If there are still issues, it can maybe help if  Keycloak `keycloak-test-framework-oauth` module from test-framework does not have dependencies on `keycloak-services` (will require some changes in the Keycloak itself). There is
-maybe not so much changes needed as `keycloak-test-framework-oauth` client has mostly dependencies on various constants and minor utilities from `keycloak-services`. 
-
-4) Add some other FAPI/OAuth/OIDC related functionality to this demo (EG. OIDC4VCI or something else)
-
-5) Cleanup. There are lots of TODOs in the codebase. Also maybe UI can be improved. The README instructions can be possibly improved and made more clear as well.
+4) Cleanup. There are lots of TODOs in the codebase. Also maybe UI can be improved. The README instructions can be possibly improved and made more clear as well.
 Feel free to create GH issue at least if you find the trouble, but PR with contribution is welcome even more!
 
 (See above for potential contributions tips and also search for `TODO:` in the code :-) )

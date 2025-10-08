@@ -1,12 +1,11 @@
 package org.keycloak.example.util;
 
 import org.keycloak.example.Services;
-import org.keycloak.example.oauth.AbstractHttpPostRequest;
-import org.keycloak.example.oauth.AccessTokenRequest;
-import org.keycloak.example.oauth.AccessTokenResponse;
-import org.keycloak.example.oauth.PkceGenerator;
 import org.keycloak.protocol.oidc.representations.OIDCConfigurationRepresentation;
 import org.keycloak.representations.oidc.OIDCClientRepresentation;
+import org.keycloak.testsuite.util.oauth.AbstractHttpPostRequest;
+import org.keycloak.testsuite.util.oauth.AccessTokenResponse;
+import org.keycloak.testsuite.util.oauth.PkceGenerator;
 
 /**
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>

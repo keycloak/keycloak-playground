@@ -91,12 +91,12 @@
             <version>${keycloak.version}</version>
             <!--<scope>provided</scope>-->
         </dependency>
-        <!--<dependency>
+        <dependency>
             <groupId>org.keycloak.tests</groupId>
             <artifactId>keycloak-tests-utils-shared</artifactId>
             <version>${keycloak.version}</version>
-            <scope>provided</scope>
-        </dependency>-->
+        <!--    <scope>provided</scope>-->
+        </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
