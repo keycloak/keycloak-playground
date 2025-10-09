@@ -2,7 +2,7 @@
 
 This is the example application to demonstrate Keycloak FAPI 1 support and DPoP support. It requires to:
 - Run and setup Keycloak server on your laptop
-- Run Wildfly server on your laptop with this application deployed
+- Run the application deployed on Quarkus
 
 ## Warning
 
@@ -16,7 +16,7 @@ For DPoP, see https://datatracker.ietf.org/doc/html/rfc9449 and Keycloak documen
 ## Pre-requisites
 
 This demo assumes Keycloak running on `https://as.keycloak-fapi.org:8443` and application running on `https://app.keycloak-fapi.org:8543`.
-In order to have both running on your laptop, you may need to ensure that these servers are bound to your host.
+This is to mimic real servers.  In order to have both running on your laptop, you may need to ensure that these servers are bound to your host.
 
 On linux, the easiest is to edit `/etc/hosts` file and add the host similar to this
 ```
@@ -73,6 +73,8 @@ For debugging, it is possible to use `mvn quarkus:dev` (However application is t
 
 ## Demo
 
+There are few demos, which can be run independently on each other (EG. Running DPoP demo does not prescribe that you must run also steps in the FAPI demo).
+
 ### FAPI 1 Demo
 
 1) Go to `https://app.keycloak-fapi.org:8543` 
@@ -116,7 +118,7 @@ required by the specs. This hash is based on the X.509 certificate used for clie
 ### DPOP Demo
 
 1) It is assumption you have realm `test`, some user in the realm and initial access token as described in the `FAPI 1 Demo` above. 
-But it is recommended to disable the client policies set by `FAPI 1 Demo`
+But it is recommended to disable the client policies set by `FAPI 1 Demo` (in case that you run the `FAPI 1 demo` beforehand).
 
 2) It is recommended to test DPoP with `Client authentication method` set either to `none` (public clients) or `client_auth_basic` (Normal confidential client with client-secret based authentication)
 
