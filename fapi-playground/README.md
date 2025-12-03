@@ -46,7 +46,7 @@ cp keystores/keycloak.* $KEYCLOAK_HOME/bin
 cd $KEYCLOAK_HOME/bin
 ./kc.sh start --hostname=as.keycloak-fapi.org --https-key-store-file=keycloak.jks --https-key-store-password=secret \
 --https-trust-store-file=keycloak.truststore --https-trust-store-password=secret \
---https-client-auth=request
+--https-client-auth=request --features=oid4vc-vci
 ```
 
 
@@ -54,7 +54,7 @@ cd $KEYCLOAK_HOME/bin
 
 3.a) Go to `https://as.keycloak-fapi.org:8443/`, create admin account, login to admin console
 
-3.b) Create realm `test`
+3.b) Create realm `test`.
 
 3.c) Create some user with password in this realm 
 
@@ -152,6 +152,33 @@ you can create client policy `dpop-policy` with condition `any-client` and link 
 
 6.b) If you checked `Enforce Authorization Code binding to DPoP key` for the DPoP client policy executor above, you can notice that plagroud will require `Use DPoP Authorization Code Binding`
 for the successful login.
+
+## OID4VCI Demo
+
+NOTE: At the time of this writing, this is expected to be tested with latest Keycloak server nightly release (from 2025-12-05 or newer).
+
+OID4VCI demo expects that server is started with the `--features=oid4vc-vci` feature enabled.
+
+1) It is expected to import realm `test` from this directory with some pre-configured client scopes and stuff.
+Please login to the admin console, delete realm `test` (if you have existing realm from previous demos) and import realm
+from the file [oid4vci/singleFile-realm.json](oid4vci/singleFile-realm.json) .
+
+2) Go to http://localhost:8543 . Then obtain initial access token, register OIDC client and login as user `john` with password `password`.
+See previous steps of this README file for the details.
+
+3) Go back to Keycloak admin console and lookup your newly registered client from the `test` realm.
+Manually update the client to:
+3.a) Enable OID4VCI switch for this client. It can be found in the `Advanced` tab of the client
+3.b) Assign some OID4VCI client scope to this client according to the credential you want to issue. For example you may assign
+client scope `sd-jwt-credential` to the client. Make sure to assign it as `Optional` client scope to the client.
+
+4) In the demo application, obtain OID4VCI metadata (first button in the OID4VCI section of the page) and make sure to
+select OID4VCI credential related to the client scope you assigned to the client in the previous step.
+
+5) Click `Credential issuance - Pre-Authorized code grant` and make sure that OID4VCI credential is successfully issued.
+See related requests/responses.
+
+6) Click `Get last Verifiable Credential` to see the details about last credential (works just for the `dc+sd-jwt` credential formats right now).
 
 
 ## Test with latest Keycloak nightly 

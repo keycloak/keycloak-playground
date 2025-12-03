@@ -1,5 +1,7 @@
 package org.keycloak.example;
 
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.keycloak.common.crypto.CryptoIntegration;
 import org.keycloak.example.util.FreeMarkerUtil;
 import org.keycloak.example.util.MutualTLSUtils;
@@ -29,6 +31,7 @@ public class Services {
 
     private final FreeMarkerUtil freeMarker = new FreeMarkerUtil();
     private volatile OAuthClient oauthClient;
+    private volatile CloseableHttpClient httpClient;
 
     private final SessionData session = new SessionData(); // TODO: Make sure that this is really session data and not app-scoped stuff
 
@@ -37,10 +40,19 @@ public class Services {
         return freeMarker;
     }
 
+    public CloseableHttpClient getHttpClient() {
+        if (httpClient == null) {
+            synchronized (this) {
+                httpClient = MutualTLSUtils.newCloseableHttpClientWithDefaultKeyStoreAndTrustStore();
+            }
+        }
+        return httpClient;
+    }
+
     public OAuthClient getOauthClient() {
         if (oauthClient == null) {
             synchronized (this) {
-                oauthClient = new OAuthClient(SERVER_ROOT, MutualTLSUtils.newCloseableHttpClientWithDefaultKeyStoreAndTrustStore())
+                oauthClient = new OAuthClient(SERVER_ROOT, getHttpClient())
                         .realm(MyConstants.REALM_NAME);
 //                oauthClient.init();
             }
