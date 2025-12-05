@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -34,18 +35,9 @@ import org.keycloak.example.bean.AuthorizationEndpointRequestObject;
 import org.keycloak.example.bean.InfoBean;
 import org.keycloak.example.bean.ServerInfoBean;
 import org.keycloak.example.bean.UrlBean;
-import org.keycloak.example.util.ClientConfigContext;
-import org.keycloak.example.util.ClientRegistrationWrapper;
-import org.keycloak.example.util.DPoPContext;
-import org.keycloak.example.util.KeysWrapper;
-import org.keycloak.example.util.MyConstants;
-import org.keycloak.example.util.MyException;
-import org.keycloak.example.util.OAuthClient;
-import org.keycloak.example.util.OAuthClientUtil;
-import org.keycloak.example.util.OIDCFlowConfigContext;
-import org.keycloak.example.util.SessionData;
-import org.keycloak.example.util.UUIDUtil;
-import org.keycloak.example.util.WebRequestContext;
+import org.keycloak.example.handlers.ActionHandlerContext;
+import org.keycloak.example.handlers.ActionHandlerManager;
+import org.keycloak.example.util.*;
 import org.keycloak.jose.jwk.JSONWebKeySet;
 import org.keycloak.jose.jws.JWSHeader;
 import org.keycloak.jose.jws.JWSInput;
@@ -100,6 +92,7 @@ public class WebEndpoint {
         fmAttributes.put("url", new UrlBean(uriInfo));
         fmAttributes.put("clientConfigCtx", Services.instance().getSession().getClientConfigContext());
         fmAttributes.put("oidcConfigCtx", Services.instance().getSession().getOidcConfigContext());
+        fmAttributes.put("oid4vciCtx", Services.instance().getSession().getOrCreateOID4VCIContext());
         return Services.instance().getFreeMarker().processTemplate(fmAttributes, "index.ftl");
     }
 
@@ -131,7 +124,11 @@ public class WebEndpoint {
         String action = params.get("my-action");
         SessionData session = Services.instance().getSession();
         WebRequestContext<AbstractHttpPostRequest, AccessTokenResponse> lastTokenResponse = session.getTokenRequestCtx();
+
+        Map<String, Function<ActionHandlerContext, InfoBean>> handlerActions = new ActionHandlerManager().getAllHandlerActions();
+
         try {
+            // TODO: Possibly replace this switch with action handlers as well...
             switch (action) {
                 case "wellknown-endpoint":
                     OIDCConfigurationRepresentation cfg = Services.instance().getSession().getAuthServerInfo();
@@ -313,8 +310,16 @@ public class WebEndpoint {
                     ctx.rotateKeys();
                     fmAttributes.put("info", new InfoBean("DPoP Keys rotated", "New thumbprint: " + ctx.generateKeyThumbprint()));
                     break;
+
                 default:
-                    throw new MyException("Illegal action");
+                    Function<ActionHandlerContext, InfoBean> actionImpl = handlerActions.get(action);
+                    if (actionImpl != null) {
+                        ActionHandlerContext actionCtx = new ActionHandlerContext(params, action, session, lastTokenResponse);
+                        InfoBean info = actionImpl.apply(actionCtx);
+                        fmAttributes.put("info", info);
+                    } else {
+                        throw new MyException("Illegal action: " + action);
+                    }
             }
         } catch (MyException me) {
             fmAttributes.put("info", new InfoBean("Error!", "Error when performing action. See server log for details"));

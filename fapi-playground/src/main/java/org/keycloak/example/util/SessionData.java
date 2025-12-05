@@ -28,6 +28,9 @@ public class SessionData {
 
     private DPoPContext dpopContext;
 
+    private OID4VCIContext oid4vciContext;
+
+    // TODO: Cache the result...
     public OIDCConfigurationRepresentation getAuthServerInfo() {
         return Services.instance().getOauthClient().
                 realm(MyConstants.REALM_NAME)
@@ -87,6 +90,13 @@ public class SessionData {
             dpopContext = new DPoPContext();
         }
         return dpopContext;
+    }
+
+    public OID4VCIContext getOrCreateOID4VCIContext() {
+        if (oid4vciContext == null) {
+            oid4vciContext = new OID4VCIContext();
+        }
+        return oid4vciContext;
     }
 
     public PkceGenerator getPkceContext() {

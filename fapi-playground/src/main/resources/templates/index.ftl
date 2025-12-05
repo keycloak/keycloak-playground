@@ -123,6 +123,36 @@
     <button onclick="submitWithAction('show-last-dpop-proof')">Show Last DPoP JWT</button>
     </div>
 
+    <br />
+    <hr />
+
+    <h3>OID4VCI</h3>
+
+    <div>
+        <table>
+            <tr>
+                <td>OID4VCI Credential Config: </td>
+                <td>
+                    <select name="oid4vci-credential" id="oid4vci-credential" value="${oid4vciCtx.selectedCredentialId!}">
+                        <#list oid4vciCtx.availableCredentials as currentCredential>
+                            <#if oid4vciCtx.selectedCredentialId == currentCredential.id>
+                                <option value="${currentCredential.id}" selected>${currentCredential.displayName}</option>
+                            <#else>
+                                <option value="${currentCredential.id}">${currentCredential.displayName}</option>
+                            </#if>
+                        </#list>
+                    </select>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <br />
+    <div>
+        <button onclick="submitWithAction('oid4vci-wellknown-endpoint')">Get OID4VCI metadata from well-known endpoint</button>
+        <button onclick="submitWithAction('create-credential-flow')">Credential issuance - Pre-Authorized code grant</button>
+        <button onclick="submitWithAction('last-credential-response')">Get last Verifiable Credential</button>
+    </div>
+
 
     <input type="hidden" id="my-action" name="my-action">
 
