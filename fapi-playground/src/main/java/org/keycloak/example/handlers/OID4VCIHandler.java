@@ -196,7 +196,7 @@ public class OID4VCIHandler implements ActionHandler {
         if (appClientId != null)
             res += "&client_id=" + appClientId;
         if (appUserId != null)
-            res += "&user_id=" + appUserId;
+            res += "&username=" + appUserId;
         return res;
     }
 
