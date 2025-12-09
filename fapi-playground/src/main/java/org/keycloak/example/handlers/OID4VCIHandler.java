@@ -159,14 +159,20 @@ public class OID4VCIHandler implements ActionHandler {
 
         try {
             IDToken idToken = new JWSInput(lastTokenResponse.getIdToken()).readJsonContent(IDToken.class);
-            String userId = idToken.getPreferredUsername(); // TODO: The parameter is called user_id, but expects username instead. See https://github.com/keycloak/keycloak/issues/44642
+            String username = idToken.getPreferredUsername();
             String clientId = idToken.getIssuedFor();
-            String credentialOfferCreationUri = getCredentialOfferUri(credentialConfigId, true, userId, clientId);
+            String credentialOfferCreationUri = getCredentialOfferUri(credentialConfigId, true, username, clientId);
 
-            CredentialOfferURI credentialOfferURI = SimpleHttp.doGet(credentialOfferCreationUri, httpClient)
+            CredentialOfferURI credentialOfferURI;
+            String credOfferURIStr = SimpleHttp.doGet(credentialOfferCreationUri, httpClient)
                     .auth(lastTokenResponse.getAccessToken())
-                    .asJson(CredentialOfferURI.class); // TODO: This should not return JSON, but rather some generic URI instead. Should this be even invoked from this app?
+                    .asString(); // TODO: OID4VCI This should not return JSON, but rather some generic URI instead. Should this be even invoked from this app?
 
+            if (credOfferURIStr.contains("\"error\"")) {
+                throw new MyException("Error when invoking credential creation endpoint: " + credOfferURIStr);
+            }
+
+            credentialOfferURI = JsonSerialization.readValue(credOfferURIStr, CredentialOfferURI.class);
             GenericRequestContext request = new GenericRequestContext(credentialOfferCreationUri, Map.of(HttpHeaders.AUTHORIZATION, "Bearer " + lastTokenResponse.getAccessToken()), (String) null);
             return new WebRequestContext<>(request, credentialOfferURI);
         } catch (JWSInputException | IOException ioe) {
@@ -189,14 +195,14 @@ public class OID4VCIHandler implements ActionHandler {
         }
     }
 
-    private static String getCredentialOfferUri(String credentialConfigId, Boolean preAuthorized, String appUserId, String appClientId) {
+    private static String getCredentialOfferUri(String credentialConfigId, Boolean preAuthorized, String appUsername, String appClientId) {
         String res = Services.instance().getSession().getAuthServerInfo().getIssuer() + "/protocol/oid4vc/credential-offer-uri?credential_configuration_id=" + credentialConfigId;
         if (preAuthorized != null)
             res += "&pre_authorized=" + preAuthorized;
         if (appClientId != null)
             res += "&client_id=" + appClientId;
-        if (appUserId != null)
-            res += "&username=" + appUserId;
+        if (appUsername != null)
+            res += "&username=" + appUsername; // TODO: Replace hardcoded username with appUsername
         return res;
     }
 
