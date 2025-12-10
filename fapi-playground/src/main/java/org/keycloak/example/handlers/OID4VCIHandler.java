@@ -116,27 +116,19 @@ public class OID4VCIHandler implements ActionHandler {
     }
 
     private String getAuthorizationDetailsForAuthzCodeFlow(CredentialIssuer credIssuerMetadata, String selectedCredentialConfigId) {
-        String expectedClaim = "lastName"; // TODO: Change this...
+        String expectedClaim1 = "university"; // TODO: Update these to not be hardcoded...
+        String expectedClaim2 = "education-certificate-number";
 
         SupportedCredentialConfiguration supportedCredConfig = credIssuerMetadata.getCredentialsSupported().get(selectedCredentialConfigId);
         String format = supportedCredConfig.getFormat();
 
-        ClaimsDescription claim = new ClaimsDescription();
-
-        // Construct claim path based on credential format
-        List<Object> claimPath;
-        if (OID4VCConstants.SD_JWT_VC_FORMAT.equals(format)) {
-            claimPath = Arrays.asList(expectedClaim);
-        } else {
-            claimPath = Arrays.asList("credentialSubject", expectedClaim);
-        }
-        claim.setPath(claimPath);
-        claim.setMandatory(true);
+        ClaimsDescription claim1 = getMandatoryClaimForAuthzDetails(expectedClaim1, format);
+        ClaimsDescription claim2 = getMandatoryClaimForAuthzDetails(expectedClaim2, format);
 
         AuthorizationDetail authDetail = new AuthorizationDetail();
         authDetail.setType(OPENID_CREDENTIAL);
         authDetail.setCredentialConfigurationId(selectedCredentialConfigId);
-        authDetail.setClaims(Arrays.asList(claim));
+        authDetail.setClaims(Arrays.asList(claim1, claim2));
         authDetail.setLocations(Collections.singletonList(credIssuerMetadata.getCredentialIssuer()));
 
         List<AuthorizationDetail> authDetails = List.of(authDetail);
@@ -145,6 +137,21 @@ public class OID4VCIHandler implements ActionHandler {
         } catch (IOException ioe) {
             throw new MyException("Failed to create Authorization details from object: " + authDetails);
         }
+    }
+
+    private ClaimsDescription getMandatoryClaimForAuthzDetails(String claimName, String format) {
+        ClaimsDescription claim = new ClaimsDescription();
+
+        // Construct claim path based on credential format
+        List<Object> claimPath;
+        if (OID4VCConstants.SD_JWT_VC_FORMAT.equals(format)) {
+            claimPath = Arrays.asList(claimName);
+        } else {
+            claimPath = Arrays.asList("credentialSubject", claimName);
+        }
+        claim.setPath(claimPath);
+        claim.setMandatory(true);
+        return claim;
     }
 
 
