@@ -25,6 +25,7 @@ public class OID4VCIContext {
     private CredentialsOffer credentialsOffer;
     private OID4VCAuthorizationDetailsResponse authzDetails;
     private CredentialResponse credentialResponse;
+    private String accessToken;
 
     public String getSelectedCredentialId() {
         return selectedCredentialId;
@@ -80,6 +81,14 @@ public class OID4VCIContext {
 
     public void setCredentialResponse(CredentialResponse credentialResponse) {
         this.credentialResponse = credentialResponse;
+    }
+
+    public String getAccessToken() {
+        return accessToken;
+    }
+
+    public void setAccessToken(String accessToken) {
+        this.accessToken = accessToken;
     }
 
     public static class OID4VCCredential {

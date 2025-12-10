@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -28,10 +27,7 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.jboss.resteasy.reactive.server.multipart.MultipartFormDataInput;
 import org.keycloak.OAuth2Constants;
-import org.keycloak.common.util.SecretGenerator;
 import org.keycloak.common.util.StreamUtil;
-import org.keycloak.common.util.Time;
-import org.keycloak.example.bean.AuthorizationEndpointRequestObject;
 import org.keycloak.example.bean.InfoBean;
 import org.keycloak.example.bean.ServerInfoBean;
 import org.keycloak.example.bean.UrlBean;
@@ -52,8 +48,6 @@ import org.keycloak.representations.oidc.OIDCClientRepresentation;
 import org.keycloak.testsuite.util.oauth.AbstractHttpPostRequest;
 import org.keycloak.testsuite.util.oauth.AccessTokenRequest;
 import org.keycloak.testsuite.util.oauth.AccessTokenResponse;
-import org.keycloak.testsuite.util.oauth.LoginUrlBuilder;
-import org.keycloak.testsuite.util.oauth.PkceGenerator;
 import org.keycloak.testsuite.util.oauth.RefreshRequest;
 import org.keycloak.testsuite.util.oauth.UserInfoRequest;
 import org.keycloak.testsuite.util.oauth.UserInfoResponse;
@@ -186,9 +180,9 @@ public class WebEndpoint {
                 case "create-login-url":
                     OIDCFlowConfigContext oidcFlowCtx = collectOIDCFlowConfigParams(params, session);
 
-                    String authRequestUrl = getAuthorizationRequestUrl(oidcFlowCtx);
+                    String authRequestUrl = LoginUtil.getAuthorizationRequestUrl(oidcFlowCtx, uriInfo, null);
                     fmAttributes.put("info", new InfoBean("OIDC Authentication Request URL", authRequestUrl));
-                    fmAttributes.put("authRequestUrl", authRequestUrl);
+                    fmAttributes.put(Constants.AUTH_REQUEST_URL, authRequestUrl);
                     session.setAuthenticationRequestUrl(authRequestUrl);
                     break;
                 case "process-fragment":
@@ -314,7 +308,7 @@ public class WebEndpoint {
                 default:
                     Function<ActionHandlerContext, InfoBean> actionImpl = handlerActions.get(action);
                     if (actionImpl != null) {
-                        ActionHandlerContext actionCtx = new ActionHandlerContext(params, action, session, lastTokenResponse);
+                        ActionHandlerContext actionCtx = new ActionHandlerContext(params, action, session, lastTokenResponse, uriInfo, fmAttributes);
                         InfoBean info = actionImpl.apply(actionCtx);
                         fmAttributes.put("info", info);
                     } else {
@@ -414,69 +408,6 @@ public class WebEndpoint {
     }
 
 
-    private String getAuthorizationRequestUrl(OIDCFlowConfigContext oidcFlowCtx) {
-        OAuthClient oauthClient = Services.instance().getOauthClient();
-        SessionData session = Services.instance().getSession();
-        OIDCClientRepresentation oidcClient = session.getRegisteredClient();
-        if (oidcClient == null) {
-            throw new MyException("Not client registered. Please register client first");
-        }
-
-        String dpopJkt = oidcFlowCtx.isUseDPoPAuthzCodeBinding() ? session.getOrCreateDpopContext().generateKeyThumbprint() : null;
-
-        if (oidcFlowCtx.isUseRequestObject()) {
-            AuthorizationEndpointRequestObject requestObject = createValidRequestObjectForSecureRequestObjectExecutor(oidcClient.getClientId(), oidcFlowCtx.isUseNonce());
-            KeysWrapper keys = Services.instance().getSession().getKeys();
-            if (keys == null) {
-                throw new MyException("JWKS keys not set when generating request object. Keys need to be created during client registration");
-            }
-            String request = keys.getOidcRequest(requestObject, Services.instance().getSession().getRegisteredClient().getRequestObjectSigningAlg());
-            // oauthClient.client(oidcClient.getClientId()); Already set after client registration
-            return oauthClient.redirectUri(null)
-                    .responseType("code id_token")
-                    .loginForm()
-                        .request(request)
-                        .nonce(null)
-                        .state(null)
-                        .dpopJkt(dpopJkt)
-//                        .responseType(null);
-            // oauthClient.responseMode("query");
-                        .build();
-        } else {
-            LoginUrlBuilder loginUrl = oauthClient//.client(oidcClient.getClientId()) - Already set after client registration
-                .responseType(OAuth2Constants.CODE)
-                .redirectUri(oidcClient.getRedirectUris().get(0))
-                    .loginForm()
-                        .state(SecretGenerator.getInstance().generateSecureID())
-                        .request(null);
-
-            setPkceInAuthenticationRequest(session, oidcFlowCtx,
-                    pkce -> loginUrl.codeChallenge(pkce),
-                    () -> loginUrl.codeChallenge(null, null));
-
-            if (oidcFlowCtx.isUseNonce()) {
-                loginUrl.nonce(SecretGenerator.getInstance().generateSecureID());
-            } else {
-                loginUrl.nonce(null);
-            }
-            loginUrl.dpopJkt(dpopJkt);
-            return loginUrl.build();
-        }
-    }
-
-
-    private void setPkceInAuthenticationRequest(SessionData session, OIDCFlowConfigContext oidcFlowCtx, Consumer<PkceGenerator> pkceConsumer1, Runnable pkceCleaner) {
-        if (oidcFlowCtx.isUsePkce()) {
-            PkceGenerator pkce = PkceGenerator.s256();
-            session.setPkceContext(pkce);
-            pkceConsumer1.accept(pkce);
-        } else {
-            session.setPkceContext(null);
-            pkceCleaner.run();
-        }
-    }
-
-
     private OIDCClientRepresentation createClientToRegister(String clientAuthMethod, boolean generateJwks) {
         OIDCClientRepresentation client = new OIDCClientRepresentation();
         client.setClientName("my fapi client");
@@ -499,43 +430,6 @@ public class WebEndpoint {
             Services.instance().getSession().setKeys(null);
         }
         return client;
-    }
-
-    protected AuthorizationEndpointRequestObject createValidRequestObjectForSecureRequestObjectExecutor(String clientId, boolean nonce) {
-        SessionData session = Services.instance().getSession();
-
-        AuthorizationEndpointRequestObject requestObject = new AuthorizationEndpointRequestObject();
-        requestObject.id(UUIDUtil.generateId());
-        requestObject.iat(Long.valueOf(Time.currentTime()));
-        requestObject.exp(requestObject.getIat() + Long.valueOf(300));
-        requestObject.nbf(requestObject.getIat());
-        requestObject.setClientId(clientId);
-        requestObject.setResponseType("code id_token");
-        requestObject.setRedirectUriParam(new UrlBean(uriInfo).getClientRedirectUri());
-        requestObject.setScope("openid");
-        String state = UUIDUtil.generateId();
-        requestObject.setState(state);
-        requestObject.setMax_age(Integer.valueOf(600));
-        requestObject.setOtherClaims("custom_claim_ein", "rot");
-        if (session.getAuthServerInfo() == null) {
-            throw new MyException("Please make sure that well-known info is executed before generating request object");
-        }
-        requestObject.audience(session.getAuthServerInfo().getIssuer(), "https://example.com");
-        if (nonce) {
-            requestObject.setNonce(UUIDUtil.generateId());
-        }
-
-        setPkceInAuthenticationRequest(session, session.getOidcConfigContext(),
-                pkce -> {
-                    requestObject.setCodeChallenge(pkce.getCodeChallenge());
-                    requestObject.setCodeChallengeMethod(pkce.getCodeChallengeMethod());
-                },
-                () -> {
-                    requestObject.setCodeChallenge(null);
-                    requestObject.setCodeChallengeMethod(null);
-                });
-
-        return requestObject;
     }
 
     private WebRequestContext<AbstractHttpPostRequest, AccessTokenResponse> sendTokenRefresh(SessionData session) {

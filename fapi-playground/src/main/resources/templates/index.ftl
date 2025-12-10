@@ -149,7 +149,9 @@
     <br />
     <div>
         <button onclick="submitWithAction('oid4vci-wellknown-endpoint')">Get OID4VCI metadata from well-known endpoint</button>
+        <button onclick="submitWithAction('oid4vci-authz-code-flow')">Credential issuance - Authorization code grant</button>
         <button onclick="submitWithAction('create-credential-flow')">Credential issuance - Pre-Authorized code grant</button>
+        <button onclick="submitWithAction('oid4vci-credential-request')">Credential request</button>
         <button onclick="submitWithAction('last-credential-response')">Get last Verifiable Credential</button>
     </div>
 

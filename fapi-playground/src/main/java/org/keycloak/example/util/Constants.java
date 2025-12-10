@@ -16,4 +16,6 @@ public class Constants {
     public static final String REQUEST_URI = "request_uri";
 
     public static final String RESPONSE_MODE = "response_mode";
+
+    public static final String AUTH_REQUEST_URL = "authRequestUrl";
 }
