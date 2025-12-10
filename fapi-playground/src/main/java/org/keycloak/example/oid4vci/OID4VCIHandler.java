@@ -1,4 +1,4 @@
-package org.keycloak.example.handlers;
+package org.keycloak.example.oid4vci;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -10,6 +10,8 @@ import org.keycloak.OAuth2Constants;
 import org.keycloak.OID4VCConstants;
 import org.keycloak.example.Services;
 import org.keycloak.example.bean.InfoBean;
+import org.keycloak.example.handlers.ActionHandler;
+import org.keycloak.example.handlers.ActionHandlerContext;
 import org.keycloak.example.util.*;
 import org.keycloak.jose.jws.JWSHeader;
 import org.keycloak.jose.jws.JWSInput;
@@ -44,9 +46,10 @@ public class OID4VCIHandler implements ActionHandler {
         return Map.of(
                 "oid4vci-wellknown-endpoint", this::handleOID4VCIWellKnownEndpointAction,
                 "oid4vci-authz-code-flow", this::handleAuthzCodeFlow,
-                "create-credential-flow", this::handleCreateCredentialOfferAction,
+                "oid4vci-pre-authz-code-flow", this::handleCreateCredentialOfferAction,
                 "oid4vci-credential-request", this::credentialRequest,
-                "last-credential-response", this::getLastCredentialResponse
+                "oid4vci-last-credential-response", this::getLastCredentialResponse,
+                "oid4vci-create-presentation", this::createPresentation
         );
     }
 
@@ -56,7 +59,9 @@ public class OID4VCIHandler implements ActionHandler {
             String tokenResp = JsonSerialization.writeValueAsString(accessTokenResponse); // TODO: Dummy to convert to String, which need to be converted back. Improve...
             List<OID4VCAuthorizationDetailsResponse> authzDetails = parseAuthorizationDetails(tokenResp);
 
-            if (authzDetails.size() != 1) {
+            if (authzDetails.isEmpty()) {
+                return;
+            } else if (authzDetails.size() > 1) {
                 throw new MyException("Unexpected size of the authzDetails. Size was " + authzDetails.size() + ". The response was: " + tokenResp);
             }
             OID4VCIContext oid4vciCtx = session.getOrCreateOID4VCIContext();
@@ -214,8 +219,10 @@ public class OID4VCIHandler implements ActionHandler {
 
     private void collectOID4VCIConfigParams(Map<String, String> params, OID4VCIContext oid4vciCtx) {
         String oid4vciCredential = params.get("oid4vci-credential");
-        log.infof("Selected oid4vciCredential: %s", oid4vciCredential);
+        String claimsToPresent = params.get("oid4ci-claims-to-present");
+        log.infof("Selected oid4vciCredential: %s, claimsToPresent: %s", oid4vciCredential, claimsToPresent);
         oid4vciCtx.setSelectedCredentialId(oid4vciCredential);
+        oid4vciCtx.setClaimsToPresent(claimsToPresent);
     }
 
     private List<OID4VCIContext.OID4VCCredential> getAvailableCredentials(CredentialIssuer credIssuer) {
@@ -446,5 +453,60 @@ public class OID4VCIHandler implements ActionHandler {
                 throw new MyException("Exception when displaying latest verifiable credential", ioe);
             }
         }
+    }
+
+    private InfoBean createPresentation(ActionHandlerContext actionContext) {
+        OID4VCIContext oid4vciCtx = actionContext.getSession().getOrCreateOID4VCIContext();
+        collectOID4VCIConfigParams(actionContext.getParams(), oid4vciCtx);
+
+        if (oid4vciCtx.getCredentialResponse() == null) {
+            return new InfoBean("No verifiable credential", "No OID4VCI verifiable credential present. Please first start credential issuance flow.");
+        } else {
+            CredentialResponse credentialResponse = oid4vciCtx.getCredentialResponse();
+            String credentialStr = credentialResponse.getCredentials().get(0).getCredential().toString();
+
+            List<String> claimsToPresent = oid4vciCtx.getClaimsToPresent() == null ? Collections.emptyList() : List.of(oid4vciCtx.getClaimsToPresent().split(","));
+
+            try {
+                // Assumptions it is Sd-JWT VC. TODO: Make it working for W3C credentials...
+                SdJwtVP sdJWTVP = SdJwtVP.of(credentialStr);
+
+                // TODO: This should be better in the SdJwtVP API?
+                List<String> hashes = sdJWTVP.getClaims().entrySet().stream()
+                        .filter(entry -> {
+                            ArrayNode node = entry.getValue();
+                            if (node.size() >= 2) {
+                                String text = node.get(1).asText();
+                                return (claimsToPresent.contains(text));
+                            }
+                            return false;
+                        })
+                        .map(Map.Entry::getKey)
+                        .collect(Collectors.toList());
+
+                String newSdJWT = sdJWTVP.present(hashes, null, null);
+                log.infof("new sd JWT: %s, hashes: %s",  newSdJWT, hashes);
+
+                SdJwtVP presentation = SdJwtVP.of(newSdJWT);
+
+                JWSHeader jwsHeader = presentation.getIssuerSignedJWT().getJwsHeader();
+                JsonNode payloadNode = presentation.getIssuerSignedJWT().getPayload();
+
+                StringBuilder claimsStr = new StringBuilder("{");
+                for (Map.Entry<String, ArrayNode> claim : presentation.getClaims().entrySet()) {
+                    claimsStr.append(" " + claim.getKey() + " = " + JsonSerialization.writeValueAsPrettyString(claim.getValue()) + "\n");
+                }
+                claimsStr.append("}");
+
+                return new InfoBean(
+                        "Plain-presentation", credentialStr,
+                        "Sd-JWT presentation - header", JsonSerialization.writeValueAsPrettyString(jwsHeader),
+                        "Sd-JWT presentation - payload", JsonSerialization.writeValueAsPrettyString(payloadNode),
+                        "Sd-JWT presentation - disclosed claims", claimsStr.toString());
+            } catch (IOException ioe) {
+                throw new MyException("Exception when displaying latest presentation", ioe);
+            }
+        }
+
     }
 }

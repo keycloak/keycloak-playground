@@ -1,6 +1,7 @@
 package org.keycloak.example.handlers;
 
 import org.keycloak.example.bean.InfoBean;
+import org.keycloak.example.oid4vci.OID4VCIHandler;
 import org.keycloak.example.util.SessionData;
 import org.keycloak.testsuite.util.oauth.AccessTokenResponse;
 

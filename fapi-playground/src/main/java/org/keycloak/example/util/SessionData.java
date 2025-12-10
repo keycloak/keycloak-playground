@@ -1,6 +1,7 @@
 package org.keycloak.example.util;
 
 import org.keycloak.example.Services;
+import org.keycloak.example.oid4vci.OID4VCIContext;
 import org.keycloak.protocol.oidc.representations.OIDCConfigurationRepresentation;
 import org.keycloak.representations.oidc.OIDCClientRepresentation;
 import org.keycloak.testsuite.util.oauth.AbstractHttpPostRequest;

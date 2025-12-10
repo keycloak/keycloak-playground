@@ -1,4 +1,4 @@
-package org.keycloak.example.util;
+package org.keycloak.example.oid4vci;
 
 import org.jboss.logging.Logger;
 import org.keycloak.protocol.oid4vc.issuance.OID4VCAuthorizationDetailsResponse;
@@ -18,6 +18,7 @@ public class OID4VCIContext {
 
     // Obtained from config
     private String selectedCredentialId = "";
+    private String claimsToPresent;
 
     // Obtained from requests
     private CredentialIssuer credentialIssuerMetadata;
@@ -33,6 +34,14 @@ public class OID4VCIContext {
 
     public void setSelectedCredentialId(String selectedCredentialId) {
         this.selectedCredentialId = selectedCredentialId;
+    }
+
+    public String getClaimsToPresent() {
+        return claimsToPresent;
+    }
+
+    public void setClaimsToPresent(String claimsToPresent) {
+        this.claimsToPresent = claimsToPresent;
     }
 
     public List<OID4VCCredential> getAvailableCredentials() {

@@ -144,15 +144,17 @@
                     </select>
                 </td>
             </tr>
+            <tr><td>Claims to present (divided by comma): </td><td><input id="oid4ci-claims-to-present" name="oid4ci-claims-to-present" value="${oid4vciCtx.claimsToPresent!}"></td></tr>
         </table>
     </div>
     <br />
     <div>
         <button onclick="submitWithAction('oid4vci-wellknown-endpoint')">Get OID4VCI metadata from well-known endpoint</button>
         <button onclick="submitWithAction('oid4vci-authz-code-flow')">Credential issuance - Authorization code grant</button>
-        <button onclick="submitWithAction('create-credential-flow')">Credential issuance - Pre-Authorized code grant</button>
+        <button onclick="submitWithAction('oid4vci-pre-authz-code-flow')">Credential issuance - Pre-Authorized code grant</button>
         <button onclick="submitWithAction('oid4vci-credential-request')">Credential request</button>
-        <button onclick="submitWithAction('last-credential-response')">Get last Verifiable Credential</button>
+        <button onclick="submitWithAction('oid4vci-last-credential-response')">Get last Verifiable Credential</button>
+        <button onclick="submitWithAction('oid4vci-create-presentation')">Create presentation from last Verifiable Credential</button>
     </div>
 
 
