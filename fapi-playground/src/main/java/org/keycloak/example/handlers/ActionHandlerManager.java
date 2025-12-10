@@ -1,6 +1,8 @@
 package org.keycloak.example.handlers;
 
 import org.keycloak.example.bean.InfoBean;
+import org.keycloak.example.util.SessionData;
+import org.keycloak.testsuite.util.oauth.AccessTokenResponse;
 
 import java.util.HashMap;
 import java.util.List;
@@ -24,5 +26,11 @@ public class ActionHandlerManager {
             all.putAll(handler.getActions());
         }
         return all;
+    }
+
+    public void afterTokenResponseSuccessCallback(SessionData session, AccessTokenResponse accessTokenResponse) {
+        for (ActionHandler handler : HANDLERS) {
+            handler.afterTokenResponseSuccessCallback(session, accessTokenResponse);
+        }
     }
 }

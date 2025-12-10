@@ -14,7 +14,6 @@ import org.keycloak.example.util.*;
 import org.keycloak.jose.jws.JWSHeader;
 import org.keycloak.jose.jws.JWSInput;
 import org.keycloak.jose.jws.JWSInputException;
-import org.keycloak.models.oid4vci.CredentialScopeModel;
 import org.keycloak.protocol.oid4vc.issuance.OID4VCAuthorizationDetailsResponse;
 import org.keycloak.protocol.oid4vc.model.*;
 import org.keycloak.protocol.oidc.grants.PreAuthorizedCodeGrantTypeFactory;
@@ -49,6 +48,24 @@ public class OID4VCIHandler implements ActionHandler {
                 "oid4vci-credential-request", this::credentialRequest,
                 "last-credential-response", this::getLastCredentialResponse
         );
+    }
+
+    @Override
+    public void afterTokenResponseSuccessCallback(SessionData session, AccessTokenResponse accessTokenResponse) {
+        try {
+            String tokenResp = JsonSerialization.writeValueAsString(accessTokenResponse); // TODO: Dummy to convert to String, which need to be converted back. Improve...
+            List<OID4VCAuthorizationDetailsResponse> authzDetails = parseAuthorizationDetails(tokenResp);
+
+            if (authzDetails.size() != 1) {
+                throw new MyException("Unexpected size of the authzDetails. Size was " + authzDetails.size() + ". The response was: " + tokenResp);
+            }
+            OID4VCIContext oid4vciCtx = session.getOrCreateOID4VCIContext();
+            oid4vciCtx.setAuthzDetails(authzDetails.get(0));
+
+            oid4vciCtx.setAccessToken(accessTokenResponse.getAccessToken());
+        } catch (IOException ioe) {
+            throw new MyException("Unexpected issue when parsing authentication data");
+        }
     }
 
     private InfoBean handleOID4VCIWellKnownEndpointAction(ActionHandlerContext actionContext) {
@@ -162,30 +179,13 @@ public class OID4VCIHandler implements ActionHandler {
                 // Step 3: Token-request with pre-authorized code
                 WebRequestContext<GenericRequestContext, String> tokenResponse = triggerTokenRequestOfPreAuthorizationGrant(session.getAuthServerInfo().getTokenEndpoint(), credentialOffer.getResponse(), session);
 
-                // Step 4: Credential request
-                WebRequestContext<GenericRequestContext, Object> credentialResponse = triggerCredentialRequest(oid4VCIContext);
-
-                String credentialResponseTitle;
-                String credentialResponseOutput;
-                if (credentialResponse.getResponse() instanceof CredentialResponse) {
-                    oid4VCIContext.setCredentialResponse((CredentialResponse) credentialResponse.getResponse());
-
-                    credentialResponseTitle = "Response 4: Credential response";
-                    credentialResponseOutput = JsonSerialization.writeValueAsPrettyString(credentialResponse.getResponse());
-                } else {
-                    credentialResponseTitle = "Response 4: Credential response error";
-                    credentialResponseOutput = credentialResponse.getResponse().toString();
-                }
-
                 return new InfoBean(
                         "Request 1: Credential offer creation request", JsonSerialization.writeValueAsPrettyString(credentialOfferCreation.getRequest()),
                         "Response 1: Credential offer creation response", JsonSerialization.writeValueAsPrettyString(credentialOfferCreation.getResponse()),
                         "Request 1: Credential Offer request", credentialOffer.getRequest(),
                         "Response 2: Credential Offer response", JsonSerialization.writeValueAsPrettyString(credentialOffer.getResponse()),
-                        "Request 3: Token request", JsonSerialization.writeValueAsPrettyString(tokenResponse.getRequest()),
-                        "Response 3: Token response", tokenResponse.getResponse(),
-                        "Request 4: Credential request", JsonSerialization.writeValueAsPrettyString(credentialResponse.getRequest()),
-                        credentialResponseTitle, credentialResponseOutput);
+                        "Request 3: Pre-authz grant Token request", JsonSerialization.writeValueAsPrettyString(tokenResponse.getRequest()),
+                        "Response 3: Pre-authz grant Token response", tokenResponse.getResponse());
 
             } catch (IOException ioe) {
                 throw new MyException("Error when trying to deserialize OID4VCI well-known response to string", ioe);
@@ -385,39 +385,28 @@ public class OID4VCIHandler implements ActionHandler {
     }
 
     private InfoBean credentialRequest(ActionHandlerContext actionContext) {
-        WebRequestContext<AbstractHttpPostRequest, AccessTokenResponse> lastTokenResponse = actionContext.getLastTokenResponse();
-        SessionData session = actionContext.getSession();
+        OID4VCIContext oid4vciCtx = actionContext.getSession().getOrCreateOID4VCIContext();
+        String oid4vcAccessToken = oid4vciCtx.getAccessToken();
 
-        if (lastTokenResponse == null || lastTokenResponse.getResponse().getAccessToken() == null) {
-            return new InfoBean("No Token Response", "No token response yet. Please login first.");
-        } else {
-            try {
-                String tokenResp = JsonSerialization.writeValueAsString(lastTokenResponse.getResponse()); // TODO: Dummy to convert to String, which need to be converted back. Improve...
-                List<OID4VCAuthorizationDetailsResponse> authzDetails = parseAuthorizationDetails(tokenResp);
+        if (oid4vcAccessToken == null) {
+            return new InfoBean("No OID4VCI access token", "No access token capable of doing OID4VCI credential request. Please start OID4VCI authorization-code or pre-authorization code grant");
+        }
 
-                if (authzDetails.size() != 1) {
-                    throw new MyException("Unexpected size of the authzDetails. Size was " + authzDetails.size() + ". The response was: " + tokenResp);
-                }
-                OID4VCIContext oid4vciCtx = session.getOrCreateOID4VCIContext();
-                oid4vciCtx.setAuthzDetails(authzDetails.get(0));
+        try {
+            WebRequestContext<GenericRequestContext, Object> credentialResponse = triggerCredentialRequest(oid4vciCtx);
+            if (credentialResponse.getResponse() instanceof CredentialResponse) {
+                oid4vciCtx.setCredentialResponse((CredentialResponse) credentialResponse.getResponse());
 
-                oid4vciCtx.setAccessToken(lastTokenResponse.getResponse().getAccessToken());
-
-                WebRequestContext<GenericRequestContext, Object> credentialResponse = triggerCredentialRequest(oid4vciCtx);
-                if (credentialResponse.getResponse() instanceof CredentialResponse) {
-                    oid4vciCtx.setCredentialResponse((CredentialResponse) credentialResponse.getResponse());
-
-                    return new InfoBean(
-                            "Credential request", JsonSerialization.writeValueAsPrettyString(credentialResponse.getRequest()),
-                            "Credential response", JsonSerialization.writeValueAsPrettyString(credentialResponse.getResponse()));
-                } else {
-                    return new InfoBean(
-                            "Credential request", JsonSerialization.writeValueAsPrettyString(credentialResponse.getRequest()),
-                            "Credential response - error", JsonSerialization.writeValueAsPrettyString(credentialResponse.getResponse()));
-                }
-            } catch (IOException ioe) {
-                throw new MyException("Unexpected exception when preparing/sending credential request");
+                return new InfoBean(
+                        "Credential request", JsonSerialization.writeValueAsPrettyString(credentialResponse.getRequest()),
+                        "Credential response", JsonSerialization.writeValueAsPrettyString(credentialResponse.getResponse()));
+            } else {
+                return new InfoBean(
+                        "Credential request", JsonSerialization.writeValueAsPrettyString(credentialResponse.getRequest()),
+                        "Credential response - error", JsonSerialization.writeValueAsPrettyString(credentialResponse.getResponse()));
             }
+        } catch (IOException ioe) {
+            throw new MyException("Unexpected exception when preparing/sending credential request");
         }
     }
 

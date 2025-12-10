@@ -391,6 +391,8 @@ public class WebEndpoint {
 
                 infoTokenRequestAndResponse(info, tokenRequest, tokenResponse);
 
+                new ActionHandlerManager().afterTokenResponseSuccessCallback(session, tokenResponse);
+
                 fmAttributes.put("info", info);
                 session.setTokenRequestCtx(new WebRequestContext<>(tokenRequest, tokenResponse));
             } catch (Exception me) {
