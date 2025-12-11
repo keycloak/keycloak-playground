@@ -16,5 +16,15 @@ public interface ActionHandler {
 
     Map<String, Function<ActionHandlerContext, InfoBean>> getActions();
 
-    void afterTokenResponseSuccessCallback(SessionData session, AccessTokenResponse accessTokenResponse);
+    /**
+     * Called once user authenticated and being redirected from KC to the app
+     *
+     */
+    void onAuthenticationCallback(SessionData session, AccessTokenResponse accessTokenResponse);
+
+    /**
+     * Called before logout (right before user is redirected to the logout URL). Opportunity to cleanup some context data etc.
+     *
+     */
+    void onLogoutCallback(SessionData session);
 }

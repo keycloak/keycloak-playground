@@ -29,9 +29,15 @@ public class ActionHandlerManager {
         return all;
     }
 
-    public void afterTokenResponseSuccessCallback(SessionData session, AccessTokenResponse accessTokenResponse) {
+    public void onAuthenticationCallback(SessionData session, AccessTokenResponse accessTokenResponse) {
         for (ActionHandler handler : HANDLERS) {
-            handler.afterTokenResponseSuccessCallback(session, accessTokenResponse);
+            handler.onAuthenticationCallback(session, accessTokenResponse);
+        }
+    }
+
+    public void onLogoutCallback(SessionData session) {
+        for (ActionHandler handler : HANDLERS) {
+            handler.onLogoutCallback(session);
         }
     }
 }

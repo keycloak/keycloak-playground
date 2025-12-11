@@ -121,6 +121,9 @@
     <button onclick="submitWithAction('show-last-token-response')">Show Last Token Response</button>
     <button onclick="submitWithAction('show-last-tokens')">Show Last Tokens</button>
     <button onclick="submitWithAction('show-last-dpop-proof')">Show Last DPoP JWT</button>
+    <#if authenticated>
+        <button onclick="submitWithAction('logout')">Logout</button>
+    </#if>
     </div>
 
     <br />
@@ -150,11 +153,21 @@
     <br />
     <div>
         <button onclick="submitWithAction('oid4vci-wellknown-endpoint')">Get OID4VCI metadata from well-known endpoint</button>
-        <button onclick="submitWithAction('oid4vci-authz-code-flow')">Credential issuance - Authorization code grant</button>
-        <button onclick="submitWithAction('oid4vci-pre-authz-code-flow')">Credential issuance - Pre-Authorized code grant</button>
-        <button onclick="submitWithAction('oid4vci-credential-request')">Credential request</button>
-        <button onclick="submitWithAction('oid4vci-last-credential-response')">Get last Verifiable Credential</button>
-        <button onclick="submitWithAction('oid4vci-create-presentation')">Create presentation from last Verifiable Credential</button>
+        <#if oid4vciCtx.credentialIssuerMetadata??>
+            <button onclick="submitWithAction('oid4vci-authz-code-flow')">Credential issuance - Authorization code grant</button>
+        </#if>
+        <#if oid4vciCtx.credentialIssuerMetadata?? && authenticated>
+            <button onclick="submitWithAction('oid4vci-pre-authz-code-flow')">Credential issuance - Pre-Authorized code grant</button>
+        </#if>
+        <#if oid4vciCtx.accessToken??>
+            <button onclick="submitWithAction('oid4vci-credential-request')">Credential request</button>
+        </#if>
+        <#if oid4vciCtx.credentialResponse??>
+            <button onclick="submitWithAction('oid4vci-last-credential-response')">Show last Verifiable Credential</button>
+        </#if>
+        <#if oid4vciCtx.credentialResponse??>
+            <button onclick="submitWithAction('oid4vci-create-presentation')">Create presentation from last Verifiable Credential</button>
+        </#if>
     </div>
 
 

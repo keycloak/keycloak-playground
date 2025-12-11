@@ -54,7 +54,7 @@ public class OID4VCIHandler implements ActionHandler {
     }
 
     @Override
-    public void afterTokenResponseSuccessCallback(SessionData session, AccessTokenResponse accessTokenResponse) {
+    public void onAuthenticationCallback(SessionData session, AccessTokenResponse accessTokenResponse) {
         try {
             String tokenResp = JsonSerialization.writeValueAsString(accessTokenResponse); // TODO: Dummy to convert to String, which need to be converted back. Improve...
             List<OID4VCAuthorizationDetailsResponse> authzDetails = parseAuthorizationDetails(tokenResp);
@@ -71,6 +71,12 @@ public class OID4VCIHandler implements ActionHandler {
         } catch (IOException ioe) {
             throw new MyException("Unexpected issue when parsing authentication data");
         }
+    }
+
+    @Override
+    public void onLogoutCallback(SessionData session) {
+        OID4VCIContext oid4vciCtx = session.getOrCreateOID4VCIContext();
+        oid4vciCtx.cleanup();
     }
 
     private InfoBean handleOID4VCIWellKnownEndpointAction(ActionHandlerContext actionContext) {

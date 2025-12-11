@@ -2,6 +2,8 @@ package org.keycloak.example;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,12 +47,7 @@ import org.keycloak.representations.IDToken;
 import org.keycloak.representations.RefreshToken;
 import org.keycloak.representations.dpop.DPoP;
 import org.keycloak.representations.oidc.OIDCClientRepresentation;
-import org.keycloak.testsuite.util.oauth.AbstractHttpPostRequest;
-import org.keycloak.testsuite.util.oauth.AccessTokenRequest;
-import org.keycloak.testsuite.util.oauth.AccessTokenResponse;
-import org.keycloak.testsuite.util.oauth.RefreshRequest;
-import org.keycloak.testsuite.util.oauth.UserInfoRequest;
-import org.keycloak.testsuite.util.oauth.UserInfoResponse;
+import org.keycloak.testsuite.util.oauth.*;
 import org.keycloak.util.JWKSUtils;
 import org.keycloak.util.JsonSerialization;
 
@@ -84,9 +81,12 @@ public class WebEndpoint {
     private Response renderHtml() {
         fmAttributes.put("serverInfo", new ServerInfoBean());
         fmAttributes.put("url", new UrlBean(uriInfo));
-        fmAttributes.put("clientConfigCtx", Services.instance().getSession().getClientConfigContext());
-        fmAttributes.put("oidcConfigCtx", Services.instance().getSession().getOidcConfigContext());
-        fmAttributes.put("oid4vciCtx", Services.instance().getSession().getOrCreateOID4VCIContext());
+
+        SessionData session = Services.instance().getSession();
+        fmAttributes.put("clientConfigCtx", session.getClientConfigContext());
+        fmAttributes.put("oidcConfigCtx", session.getOidcConfigContext());
+        fmAttributes.put("oid4vciCtx", session.getOrCreateOID4VCIContext());
+        fmAttributes.put("authenticated", session.getTokenRequestCtx() != null);
         return Services.instance().getFreeMarker().processTemplate(fmAttributes, "index.ftl");
     }
 
@@ -251,6 +251,32 @@ public class WebEndpoint {
                         }
                     }
                     break;
+                case "logout":
+                    if (lastTokenResponse == null) {
+                        fmAttributes.put("info", new InfoBean("Not authenticated", "No token response yet. User cannot logout"));
+                    } else {
+                        try {
+                            // Cleanup tokens and other context
+                            session.setTokenRequestCtx(null);
+                            new ActionHandlerManager().onLogoutCallback(session);
+
+                            OAuthClient oauthCl = Services.instance().getOauthClient();
+                            OIDCClientRepresentation oidcClientForLogout = session.getRegisteredClient();
+                            oauthCl.client(oidcClientForLogout.getClientId());
+                            oauthCl.config().postLogoutRedirectUri(oidcClientForLogout.getPostLogoutRedirectUris().get(0));
+
+                            String logoutUrl = oauthCl.logoutForm()
+                                    .idTokenHint(lastTokenResponse.getResponse().getIdToken())
+                                    .withClientId()
+                                    .withRedirect()
+                                    .build();
+                            log.infof("Logout: redirect to URL: %s", logoutUrl);
+                            return Response.status(302).location(new URI(logoutUrl)).build();
+                        } catch (URISyntaxException ex) {
+                            throw new MyException("Incorrect logout URL", ex);
+                        }
+                    }
+                    break;
                 case "refresh-token":
                     collectOIDCFlowConfigParams(params, session);
                     if (lastTokenResponse == null) {
@@ -391,7 +417,7 @@ public class WebEndpoint {
 
                 infoTokenRequestAndResponse(info, tokenRequest, tokenResponse);
 
-                new ActionHandlerManager().afterTokenResponseSuccessCallback(session, tokenResponse);
+                new ActionHandlerManager().onAuthenticationCallback(session, tokenResponse);
 
                 fmAttributes.put("info", info);
                 session.setTokenRequestCtx(new WebRequestContext<>(tokenRequest, tokenResponse));
@@ -416,6 +442,7 @@ public class WebEndpoint {
         UrlBean urls = new UrlBean(uriInfo);
         client.setClientUri(urls.getBaseUrl());
         client.setRedirectUris(Collections.singletonList(urls.getClientRedirectUri()));
+        client.setPostLogoutRedirectUris(Collections.singletonList(urls.getBaseUrl()));
         client.setTokenEndpointAuthMethod(clientAuthMethod);
         if (OIDCLoginProtocol.TLS_CLIENT_AUTH.equals(clientAuthMethod)) {
             client.setTlsClientAuthSubjectDn(MyConstants.EXACT_CERTIFICATE_SUBJECT_DN);

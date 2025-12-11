@@ -2104,7 +2104,7 @@
       "include.in.token.scope" : "true",
       "vc.display" : "[{\"name\":\"Education Certificate\",\"locale\":\"en-EN\"},{\"name\":\"Education Certificate\",\"locale\":\"de-DE\"}]",
       "vc.cryptographic_binding_methods_supported" : "jwk",
-      "vc.expiry_in_seconds" : "15",
+      "vc.expiry_in_seconds" : "86400000",
       "vc.verifiable_credential_type" : "https://credentials.example.com/education-certificate",
       "vc.include_in_metadata" : "true",
       "vc.credential_build_config.token_jws_type" : "JWS",

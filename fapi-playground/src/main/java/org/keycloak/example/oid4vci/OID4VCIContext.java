@@ -100,6 +100,14 @@ public class OID4VCIContext {
         this.accessToken = accessToken;
     }
 
+    public void cleanup() {
+        credentialOfferURI = null;
+        credentialsOffer = null;
+        authzDetails = null;
+        credentialResponse = null;
+        accessToken = null;
+    }
+
     public static class OID4VCCredential {
 
         private String id;
