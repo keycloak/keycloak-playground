@@ -148,6 +148,8 @@
                 </td>
             </tr>
             <tr><td>Claims to present (divided by comma): </td><td><input id="oid4ci-claims-to-present" name="oid4ci-claims-to-present" value="${oid4vciCtx.claimsToPresent!}"></td></tr>
+            <tr><td>Client ID (for pre-authorized grant): </td><td><input id="oid4ci-preauthz-client_id" name="oid4ci-preauthz-client_id" value="${oid4vciCtx.preauthzClientId!}"></td></tr>
+            <tr><td>Username (for pre-authorized grant): </td><td><input id="oid4ci-preauthz-username" name="oid4ci-preauthz-username" value="${oid4vciCtx.preauthzUsername!}"></td></tr>
         </table>
     </div>
     <br />
