@@ -7,7 +7,7 @@
   "defaultSignatureAlgorithm" : "RS256",
   "revokeRefreshToken" : false,
   "refreshTokenMaxReuse" : 0,
-  "accessTokenLifespan" : 300,
+  "accessTokenLifespan" : 900,
   "accessTokenLifespanForImplicitFlow" : 900,
   "ssoSessionIdleTimeout" : 1800,
   "ssoSessionMaxLifespan" : 36000,
@@ -1009,7 +1009,8 @@
     "attributes" : {
       "realm_client" : "false",
       "post.logout.redirect.uris" : "+",
-      "pkce.code.challenge.method" : "S256"
+      "pkce.code.challenge.method" : "S256",
+      "oid4vci.enabled" : "true"
     },
     "authenticationFlowBindingOverrides" : { },
     "fullScopeAllowed" : false,
