@@ -30,6 +30,7 @@ import org.jboss.resteasy.annotations.cache.NoCache;
 import org.jboss.resteasy.reactive.server.multipart.MultipartFormDataInput;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.common.util.StreamUtil;
+import org.keycloak.example.bean.ApplicationStateBean;
 import org.keycloak.example.bean.InfoBean;
 import org.keycloak.example.bean.ServerInfoBean;
 import org.keycloak.example.bean.UrlBean;
@@ -85,8 +86,8 @@ public class WebEndpoint {
         SessionData session = Services.instance().getSession();
         fmAttributes.put("clientConfigCtx", session.getClientConfigContext());
         fmAttributes.put("oidcConfigCtx", session.getOidcConfigContext());
+        fmAttributes.put("appState", new ApplicationStateBean(session));
         fmAttributes.put("oid4vciCtx", session.getOrCreateOID4VCIContext());
-        fmAttributes.put("authenticated", session.getTokenRequestCtx() != null);
         return Services.instance().getFreeMarker().processTemplate(fmAttributes, "index.ftl");
     }
 

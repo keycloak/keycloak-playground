@@ -56,7 +56,9 @@
     <div>
         <button onclick="submitWithAction('wellknown-endpoint')">Show response from OIDC well-known endpoint</button>
         <button onclick="submitWithAction('register-client')">Register client</button>
-        <button onclick="submitWithAction('show-registered-client')">Show last registered client</button>
+        <#if appState.clientRegistered>
+            <button onclick="submitWithAction('show-registered-client')">Show last registered client</button>
+        </#if>
     </div>
 
     <br />
@@ -114,14 +116,20 @@
     </div>
     <br />
     <div>
-    <button onclick="submitWithAction('create-login-url')">Create Login URL</button>
-    <button onclick="submitWithAction('refresh-token')">Refresh token</button>
-    <button onclick="submitWithAction('send-user-info')">Send UserInfo request</button>
+    <#if appState.clientRegistered>
+        <button onclick="submitWithAction('create-login-url')">Create Login URL</button>
+    </#if>
+    <#if appState.authenticated>
+        <button onclick="submitWithAction('refresh-token')">Refresh token</button>
+        <button onclick="submitWithAction('send-user-info')">Send UserInfo request</button>
+        <button onclick="submitWithAction('show-last-token-response')">Show Last Token Response</button>
+        <button onclick="submitWithAction('show-last-tokens')">Show Last Tokens</button>
+    </#if>
     <button onclick="submitWithAction('rotate-dpop-keys')">Rotate DPoP keys</button>
-    <button onclick="submitWithAction('show-last-token-response')">Show Last Token Response</button>
-    <button onclick="submitWithAction('show-last-tokens')">Show Last Tokens</button>
-    <button onclick="submitWithAction('show-last-dpop-proof')">Show Last DPoP JWT</button>
-    <#if authenticated>
+    <#if appState.dpopProofAvailable>
+        <button onclick="submitWithAction('show-last-dpop-proof')">Show Last DPoP JWT</button>
+    </#if>
+    <#if appState.authenticated>
         <button onclick="submitWithAction('logout')">Logout</button>
     </#if>
     </div>
@@ -134,7 +142,7 @@
     <div>
         <table>
             <tr>
-                <td>OID4VCI Credential Config: </td>
+                <td>OID4VCI Credential Type: </td>
                 <td>
                     <select name="oid4vci-credential" id="oid4vci-credential" value="${oid4vciCtx.selectedCredentialId!}">
                         <#list oid4vciCtx.availableCredentials as currentCredential>
@@ -158,7 +166,7 @@
         <#if oid4vciCtx.credentialIssuerMetadata??>
             <button onclick="submitWithAction('oid4vci-authz-code-flow')">Credential issuance - Authorization code grant</button>
         </#if>
-        <#if oid4vciCtx.credentialIssuerMetadata?? && authenticated>
+        <#if oid4vciCtx.credentialIssuerMetadata?? && appState.authenticated>
             <button onclick="submitWithAction('oid4vci-pre-authz-code-flow')">Credential issuance - Pre-Authorized code grant</button>
         </#if>
         <#if oid4vciCtx.accessToken??>
