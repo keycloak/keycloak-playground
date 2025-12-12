@@ -2,12 +2,14 @@ package org.keycloak.example;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -27,25 +29,14 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.jboss.resteasy.reactive.server.multipart.MultipartFormDataInput;
 import org.keycloak.OAuth2Constants;
-import org.keycloak.common.util.SecretGenerator;
 import org.keycloak.common.util.StreamUtil;
-import org.keycloak.common.util.Time;
-import org.keycloak.example.bean.AuthorizationEndpointRequestObject;
+import org.keycloak.example.bean.ApplicationStateBean;
 import org.keycloak.example.bean.InfoBean;
 import org.keycloak.example.bean.ServerInfoBean;
 import org.keycloak.example.bean.UrlBean;
-import org.keycloak.example.util.ClientConfigContext;
-import org.keycloak.example.util.ClientRegistrationWrapper;
-import org.keycloak.example.util.DPoPContext;
-import org.keycloak.example.util.KeysWrapper;
-import org.keycloak.example.util.MyConstants;
-import org.keycloak.example.util.MyException;
-import org.keycloak.example.util.OAuthClient;
-import org.keycloak.example.util.OAuthClientUtil;
-import org.keycloak.example.util.OIDCFlowConfigContext;
-import org.keycloak.example.util.SessionData;
-import org.keycloak.example.util.UUIDUtil;
-import org.keycloak.example.util.WebRequestContext;
+import org.keycloak.example.handlers.ActionHandlerContext;
+import org.keycloak.example.handlers.ActionHandlerManager;
+import org.keycloak.example.util.*;
 import org.keycloak.jose.jwk.JSONWebKeySet;
 import org.keycloak.jose.jws.JWSHeader;
 import org.keycloak.jose.jws.JWSInput;
@@ -57,14 +48,7 @@ import org.keycloak.representations.IDToken;
 import org.keycloak.representations.RefreshToken;
 import org.keycloak.representations.dpop.DPoP;
 import org.keycloak.representations.oidc.OIDCClientRepresentation;
-import org.keycloak.testsuite.util.oauth.AbstractHttpPostRequest;
-import org.keycloak.testsuite.util.oauth.AccessTokenRequest;
-import org.keycloak.testsuite.util.oauth.AccessTokenResponse;
-import org.keycloak.testsuite.util.oauth.LoginUrlBuilder;
-import org.keycloak.testsuite.util.oauth.PkceGenerator;
-import org.keycloak.testsuite.util.oauth.RefreshRequest;
-import org.keycloak.testsuite.util.oauth.UserInfoRequest;
-import org.keycloak.testsuite.util.oauth.UserInfoResponse;
+import org.keycloak.testsuite.util.oauth.*;
 import org.keycloak.util.JWKSUtils;
 import org.keycloak.util.JsonSerialization;
 
@@ -98,8 +82,12 @@ public class WebEndpoint {
     private Response renderHtml() {
         fmAttributes.put("serverInfo", new ServerInfoBean());
         fmAttributes.put("url", new UrlBean(uriInfo));
-        fmAttributes.put("clientConfigCtx", Services.instance().getSession().getClientConfigContext());
-        fmAttributes.put("oidcConfigCtx", Services.instance().getSession().getOidcConfigContext());
+
+        SessionData session = Services.instance().getSession();
+        fmAttributes.put("clientConfigCtx", session.getClientConfigContext());
+        fmAttributes.put("oidcConfigCtx", session.getOidcConfigContext());
+        fmAttributes.put("appState", new ApplicationStateBean(session));
+        fmAttributes.put("oid4vciCtx", session.getOrCreateOID4VCIContext());
         return Services.instance().getFreeMarker().processTemplate(fmAttributes, "index.ftl");
     }
 
@@ -131,7 +119,11 @@ public class WebEndpoint {
         String action = params.get("my-action");
         SessionData session = Services.instance().getSession();
         WebRequestContext<AbstractHttpPostRequest, AccessTokenResponse> lastTokenResponse = session.getTokenRequestCtx();
+
+        Map<String, Function<ActionHandlerContext, InfoBean>> handlerActions = new ActionHandlerManager().getAllHandlerActions();
+
         try {
+            // TODO: Possibly replace this switch with action handlers as well...
             switch (action) {
                 case "wellknown-endpoint":
                     OIDCConfigurationRepresentation cfg = Services.instance().getSession().getAuthServerInfo();
@@ -189,9 +181,9 @@ public class WebEndpoint {
                 case "create-login-url":
                     OIDCFlowConfigContext oidcFlowCtx = collectOIDCFlowConfigParams(params, session);
 
-                    String authRequestUrl = getAuthorizationRequestUrl(oidcFlowCtx);
+                    String authRequestUrl = LoginUtil.getAuthorizationRequestUrl(oidcFlowCtx, uriInfo, null);
                     fmAttributes.put("info", new InfoBean("OIDC Authentication Request URL", authRequestUrl));
-                    fmAttributes.put("authRequestUrl", authRequestUrl);
+                    fmAttributes.put(Constants.AUTH_REQUEST_URL, authRequestUrl);
                     session.setAuthenticationRequestUrl(authRequestUrl);
                     break;
                 case "process-fragment":
@@ -260,6 +252,32 @@ public class WebEndpoint {
                         }
                     }
                     break;
+                case "logout":
+                    if (lastTokenResponse == null) {
+                        fmAttributes.put("info", new InfoBean("Not authenticated", "No token response yet. User cannot logout"));
+                    } else {
+                        try {
+                            // Cleanup tokens and other context
+                            session.setTokenRequestCtx(null);
+                            new ActionHandlerManager().onLogoutCallback(session);
+
+                            OAuthClient oauthCl = Services.instance().getOauthClient();
+                            OIDCClientRepresentation oidcClientForLogout = session.getRegisteredClient();
+                            oauthCl.client(oidcClientForLogout.getClientId());
+                            oauthCl.config().postLogoutRedirectUri(oidcClientForLogout.getPostLogoutRedirectUris().get(0));
+
+                            String logoutUrl = oauthCl.logoutForm()
+                                    .idTokenHint(lastTokenResponse.getResponse().getIdToken())
+                                    .withClientId()
+                                    .withRedirect()
+                                    .build();
+                            log.infof("Logout: redirect to URL: %s", logoutUrl);
+                            return Response.status(302).location(new URI(logoutUrl)).build();
+                        } catch (URISyntaxException ex) {
+                            throw new MyException("Incorrect logout URL", ex);
+                        }
+                    }
+                    break;
                 case "refresh-token":
                     collectOIDCFlowConfigParams(params, session);
                     if (lastTokenResponse == null) {
@@ -313,8 +331,16 @@ public class WebEndpoint {
                     ctx.rotateKeys();
                     fmAttributes.put("info", new InfoBean("DPoP Keys rotated", "New thumbprint: " + ctx.generateKeyThumbprint()));
                     break;
+
                 default:
-                    throw new MyException("Illegal action");
+                    Function<ActionHandlerContext, InfoBean> actionImpl = handlerActions.get(action);
+                    if (actionImpl != null) {
+                        ActionHandlerContext actionCtx = new ActionHandlerContext(params, action, session, lastTokenResponse, uriInfo, fmAttributes);
+                        InfoBean info = actionImpl.apply(actionCtx);
+                        fmAttributes.put("info", info);
+                    } else {
+                        throw new MyException("Illegal action: " + action);
+                    }
             }
         } catch (MyException me) {
             fmAttributes.put("info", new InfoBean("Error!", "Error when performing action. See server log for details"));
@@ -392,6 +418,8 @@ public class WebEndpoint {
 
                 infoTokenRequestAndResponse(info, tokenRequest, tokenResponse);
 
+                new ActionHandlerManager().onAuthenticationCallback(session, tokenResponse);
+
                 fmAttributes.put("info", info);
                 session.setTokenRequestCtx(new WebRequestContext<>(tokenRequest, tokenResponse));
             } catch (Exception me) {
@@ -409,75 +437,13 @@ public class WebEndpoint {
     }
 
 
-    private String getAuthorizationRequestUrl(OIDCFlowConfigContext oidcFlowCtx) {
-        OAuthClient oauthClient = Services.instance().getOauthClient();
-        SessionData session = Services.instance().getSession();
-        OIDCClientRepresentation oidcClient = session.getRegisteredClient();
-        if (oidcClient == null) {
-            throw new MyException("Not client registered. Please register client first");
-        }
-
-        String dpopJkt = oidcFlowCtx.isUseDPoPAuthzCodeBinding() ? session.getOrCreateDpopContext().generateKeyThumbprint() : null;
-
-        if (oidcFlowCtx.isUseRequestObject()) {
-            AuthorizationEndpointRequestObject requestObject = createValidRequestObjectForSecureRequestObjectExecutor(oidcClient.getClientId(), oidcFlowCtx.isUseNonce());
-            KeysWrapper keys = Services.instance().getSession().getKeys();
-            if (keys == null) {
-                throw new MyException("JWKS keys not set when generating request object. Keys need to be created during client registration");
-            }
-            String request = keys.getOidcRequest(requestObject, Services.instance().getSession().getRegisteredClient().getRequestObjectSigningAlg());
-            // oauthClient.client(oidcClient.getClientId()); Already set after client registration
-            return oauthClient.redirectUri(null)
-                    .responseType("code id_token")
-                    .loginForm()
-                        .request(request)
-                        .nonce(null)
-                        .state(null)
-                        .dpopJkt(dpopJkt)
-//                        .responseType(null);
-            // oauthClient.responseMode("query");
-                        .build();
-        } else {
-            LoginUrlBuilder loginUrl = oauthClient//.client(oidcClient.getClientId()) - Already set after client registration
-                .responseType(OAuth2Constants.CODE)
-                .redirectUri(oidcClient.getRedirectUris().get(0))
-                    .loginForm()
-                        .state(SecretGenerator.getInstance().generateSecureID())
-                        .request(null);
-
-            setPkceInAuthenticationRequest(session, oidcFlowCtx,
-                    pkce -> loginUrl.codeChallenge(pkce),
-                    () -> loginUrl.codeChallenge(null, null));
-
-            if (oidcFlowCtx.isUseNonce()) {
-                loginUrl.nonce(SecretGenerator.getInstance().generateSecureID());
-            } else {
-                loginUrl.nonce(null);
-            }
-            loginUrl.dpopJkt(dpopJkt);
-            return loginUrl.build();
-        }
-    }
-
-
-    private void setPkceInAuthenticationRequest(SessionData session, OIDCFlowConfigContext oidcFlowCtx, Consumer<PkceGenerator> pkceConsumer1, Runnable pkceCleaner) {
-        if (oidcFlowCtx.isUsePkce()) {
-            PkceGenerator pkce = PkceGenerator.s256();
-            session.setPkceContext(pkce);
-            pkceConsumer1.accept(pkce);
-        } else {
-            session.setPkceContext(null);
-            pkceCleaner.run();
-        }
-    }
-
-
     private OIDCClientRepresentation createClientToRegister(String clientAuthMethod, boolean generateJwks) {
         OIDCClientRepresentation client = new OIDCClientRepresentation();
         client.setClientName("my fapi client");
         UrlBean urls = new UrlBean(uriInfo);
         client.setClientUri(urls.getBaseUrl());
         client.setRedirectUris(Collections.singletonList(urls.getClientRedirectUri()));
+        client.setPostLogoutRedirectUris(Collections.singletonList(urls.getBaseUrl()));
         client.setTokenEndpointAuthMethod(clientAuthMethod);
         if (OIDCLoginProtocol.TLS_CLIENT_AUTH.equals(clientAuthMethod)) {
             client.setTlsClientAuthSubjectDn(MyConstants.EXACT_CERTIFICATE_SUBJECT_DN);
@@ -494,43 +460,6 @@ public class WebEndpoint {
             Services.instance().getSession().setKeys(null);
         }
         return client;
-    }
-
-    protected AuthorizationEndpointRequestObject createValidRequestObjectForSecureRequestObjectExecutor(String clientId, boolean nonce) {
-        SessionData session = Services.instance().getSession();
-
-        AuthorizationEndpointRequestObject requestObject = new AuthorizationEndpointRequestObject();
-        requestObject.id(UUIDUtil.generateId());
-        requestObject.iat(Long.valueOf(Time.currentTime()));
-        requestObject.exp(requestObject.getIat() + Long.valueOf(300));
-        requestObject.nbf(requestObject.getIat());
-        requestObject.setClientId(clientId);
-        requestObject.setResponseType("code id_token");
-        requestObject.setRedirectUriParam(new UrlBean(uriInfo).getClientRedirectUri());
-        requestObject.setScope("openid");
-        String state = UUIDUtil.generateId();
-        requestObject.setState(state);
-        requestObject.setMax_age(Integer.valueOf(600));
-        requestObject.setOtherClaims("custom_claim_ein", "rot");
-        if (session.getAuthServerInfo() == null) {
-            throw new MyException("Please make sure that well-known info is executed before generating request object");
-        }
-        requestObject.audience(session.getAuthServerInfo().getIssuer(), "https://example.com");
-        if (nonce) {
-            requestObject.setNonce(UUIDUtil.generateId());
-        }
-
-        setPkceInAuthenticationRequest(session, session.getOidcConfigContext(),
-                pkce -> {
-                    requestObject.setCodeChallenge(pkce.getCodeChallenge());
-                    requestObject.setCodeChallengeMethod(pkce.getCodeChallengeMethod());
-                },
-                () -> {
-                    requestObject.setCodeChallenge(null);
-                    requestObject.setCodeChallengeMethod(null);
-                });
-
-        return requestObject;
     }
 
     private WebRequestContext<AbstractHttpPostRequest, AccessTokenResponse> sendTokenRefresh(SessionData session) {

@@ -46,7 +46,7 @@ cp keystores/keycloak.* $KEYCLOAK_HOME/bin
 cd $KEYCLOAK_HOME/bin
 ./kc.sh start --hostname=as.keycloak-fapi.org --https-key-store-file=keycloak.jks --https-key-store-password=secret \
 --https-trust-store-file=keycloak.truststore --https-trust-store-password=secret \
---https-client-auth=request
+--https-client-auth=request --features=oid4vc-vci
 ```
 
 
@@ -54,7 +54,7 @@ cd $KEYCLOAK_HOME/bin
 
 3.a) Go to `https://as.keycloak-fapi.org:8443/`, create admin account, login to admin console
 
-3.b) Create realm `test`
+3.b) Create realm `test`.
 
 3.c) Create some user with password in this realm 
 
@@ -152,6 +152,61 @@ you can create client policy `dpop-policy` with condition `any-client` and link 
 
 6.b) If you checked `Enforce Authorization Code binding to DPoP key` for the DPoP client policy executor above, you can notice that plagroud will require `Use DPoP Authorization Code Binding`
 for the successful login.
+
+## OID4VCI Demo
+
+NOTE: At the time of this writing, this is expected to be tested with latest Keycloak server nightly release (from 2025-12-05 or newer).
+
+OID4VCI demo expects that server is started with the `--features=oid4vc-vci` feature enabled.
+
+1) It is expected to import realm `test` from this directory with some pre-configured client scopes and stuff.
+Please login to the admin console, delete realm `test` (if you have existing realm from previous demos) and import realm
+from the file [oid4vci/singleFile-realm.json](oid4vci/singleFile-realm.json) .
+
+2) Go to http://localhost:8543 . Then obtain initial access token, register OIDC client (Tested with client authentication method `None`)
+
+3) Go back to Keycloak admin console and lookup your newly registered client from the `test` realm.
+Manually update the client to:
+3.a) Enable OID4VCI switch for this client. It can be found in the `Advanced` tab of the client, and then in the section `OpenID for Verifiable Credentials`
+at the bottom of the page
+3.b) Assign some OID4VCI client scope to this client according to the credential you want to issue. For example you may assign
+client scopes `education-certificate` and `oid4vc_natural_person` to the client. Make sure to assign it as `Optional` client scope to the client.
+
+4) In the demo application, obtain OID4VCI metadata (first button in the OID4VCI section of the page) and make sure to
+select OID4VCI credential related to the client scope you assigned to the client in the previous step.
+
+5) Select some credential from `Credential Type` (ideally `Education Certificate`) and click `Credential issuance - Authorization code grant`
+and make sure that OID4VCI credential is successfully issued. See how OIDC authentication request with `Authorization details` will look like.
+And then click `Login` link at the bottom of the page
+
+6) Login as `john` with `password` . It is needed to update `University` attribute in case
+you selected `Education Certificate` in previous step. This is due the user-profile configuration
+and due the fact that `education-certificate` scope was added as a request parameter to OIDC authentication request together
+with authorization details
+
+7) Now you can click `Credential request`, which should fail as user missing the mandatory attribute `education-certificate-number`.
+   (NOTE: This requires fixing https://github.com/keycloak/keycloak/issues/44796 in current main).
+
+8) In the other tab in the admin console, admin is able to manually update user `john` and fill the `Education certificate number` for him.
+In reality, assumption is, that there should be some "business process" needed for this (EG. user `john` uploads his university
+diploma somewhere to be able to share it with the administrator)
+
+9) Go back to fapi-demo and click `Credential request` again. Now credential should be successfully issued for `john` .
+
+10) See button `Show last verifiable credential` to see the parsed sd-jwt data.
+ 
+11) Then fill `Claims to present (divided by comma):`
+with some claims (EG. `university,firstName,lastName`) and click `Create presentation from last verifiable credential`.
+You can see sd-jwt with only subset of the claims.
+
+12) Change credential type to `oid4vc_natural_person` and fill username as `alice` . Now it is OK to
+send `Credential issuance - pre-authorized code` grant. See requests to observe the credential-offer and pre-authorized token
+obtained for `alice` .
+**NOTE 1:** user `john` can obtain credential-offer for `alice` as he has role `credential-offer-create`).
+**NOTE 2:** Not sure if this flow would still work in later Keycloak versions in a way shown in this demo. See discussion https://github.com/keycloak/keycloak/discussions/44764
+for the details.
+
+13) Repeat steps 9, 10, 11 and observe new `oid4vc_natural_person` VC for alice
 
 
 ## Test with latest Keycloak nightly 
