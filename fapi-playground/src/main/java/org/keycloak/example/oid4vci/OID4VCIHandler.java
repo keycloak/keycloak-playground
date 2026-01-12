@@ -19,7 +19,6 @@ import org.keycloak.jose.jws.JWSInputException;
 import org.keycloak.protocol.oid4vc.issuance.OID4VCAuthorizationDetailsResponse;
 import org.keycloak.protocol.oid4vc.model.*;
 import org.keycloak.protocol.oidc.grants.PreAuthorizedCodeGrantTypeFactory;
-import org.keycloak.rar.AuthorizationDetails;
 import org.keycloak.representations.IDToken;
 import org.keycloak.sdjwt.vp.SdJwtVP;
 import org.keycloak.testsuite.util.oauth.AbstractHttpPostRequest;
@@ -315,7 +314,7 @@ public class OID4VCIHandler implements ActionHandler {
         if (appClientId != null)
             res += "&client_id=" + appClientId;
         if (appUsername != null)
-            res += "&username=" + appUsername; // TODO: Replace hardcoded username with appUsername
+            res += "&username=" + appUsername;
         return res;
     }
 
@@ -487,21 +486,8 @@ public class OID4VCIHandler implements ActionHandler {
                 // Assumptions it is Sd-JWT VC. TODO: Make it working for W3C credentials...
                 SdJwtVP sdJWTVP = SdJwtVP.of(credentialStr);
 
-                // TODO: This should be better in the SdJwtVP API?
-                List<String> hashes = sdJWTVP.getClaims().entrySet().stream()
-                        .filter(entry -> {
-                            ArrayNode node = entry.getValue();
-                            if (node.size() >= 2) {
-                                String text = node.get(1).asText();
-                                return (claimsToPresent.contains(text));
-                            }
-                            return false;
-                        })
-                        .map(Map.Entry::getKey)
-                        .collect(Collectors.toList());
-
-                String newSdJWT = sdJWTVP.present(hashes, null, null);
-                log.infof("new sd JWT: %s, hashes: %s",  newSdJWT, hashes);
+                String newSdJWT = sdJWTVP.presentWithSpecifiedClaims (claimsToPresent, false, null, null);
+                log.infof("New sd JWT: %s",  newSdJWT);
 
                 SdJwtVP presentation = SdJwtVP.of(newSdJWT);
 
