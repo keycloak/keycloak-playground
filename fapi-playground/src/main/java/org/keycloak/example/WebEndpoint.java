@@ -181,7 +181,7 @@ public class WebEndpoint {
                 case "create-login-url":
                     OIDCFlowConfigContext oidcFlowCtx = collectOIDCFlowConfigParams(params, session);
 
-                    String authRequestUrl = LoginUtil.getAuthorizationRequestUrl(oidcFlowCtx, uriInfo, null);
+                    String authRequestUrl = LoginUtil.getAuthorizationRequestUrl(oidcFlowCtx, uriInfo, null).build();
                     fmAttributes.put("info", new InfoBean("OIDC Authentication Request URL", authRequestUrl));
                     fmAttributes.put(Constants.AUTH_REQUEST_URL, authRequestUrl);
                     session.setAuthenticationRequestUrl(authRequestUrl);
