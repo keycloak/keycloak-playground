@@ -14,10 +14,10 @@
 
     <properties>
         <!-- When updating keycloak, it is good to sync also other versions to the versions used by corresponding Keycloak version -->
-        <keycloak.version>26.5.0</keycloak.version>
-        <quarkus.platform.version>3.27.0</quarkus.platform.version>
+        <keycloak.version>26.6.0</keycloak.version>
+        <quarkus.platform.version>3.33.1</quarkus.platform.version>
         <freemarker.version>2.3.32</freemarker.version>
-        <surefire-plugin.version>3.1.2</surefire-plugin.version>
+        <surefire-plugin.version>3.5.4</surefire-plugin.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>17</maven.compiler.source>
@@ -95,6 +95,12 @@
             <groupId>org.keycloak.tests</groupId>
             <artifactId>keycloak-tests-utils-shared</artifactId>
             <version>${keycloak.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.keycloak</groupId>
+                    <artifactId>keycloak-admin-v2-rest</artifactId>
+                </exclusion>
+            </exclusions>
         <!--    <scope>provided</scope>-->
         </dependency>
         <dependency>
@@ -119,6 +125,7 @@
                 <groupId>io.quarkus.platform</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <version>${quarkus.platform.version}</version>
+                <extensions>true</extensions>
                 <executions>
                     <execution>
                         <goals>

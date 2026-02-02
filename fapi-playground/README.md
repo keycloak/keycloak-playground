@@ -25,7 +25,7 @@ On linux, the easiest is to edit `/etc/hosts` file and add the host similar to t
 
 ## Build this project
 
-This project is tested with OpenJDK 21 and Maven 3.9.9 and Keycloak 26.4.0 release
+This project is tested with OpenJDK 21 and Maven 3.9.9 and Keycloak 26.6.0 release
 
 ### Build project
 
@@ -51,7 +51,7 @@ cp keystores/keycloak.* $KEYCLOAK_HOME/bin
 cd $KEYCLOAK_HOME/bin
 ./kc.sh start --hostname=as.keycloak-fapi.org --https-key-store-file=keycloak.jks --https-key-store-password=secret \
 --https-trust-store-file=keycloak.truststore --https-trust-store-password=secret \
---https-client-auth=request --features=oid4vc-vci
+--https-client-auth=request --features=oid4vc-vci,oid4vc-vci-preauth-code
 ```
 
 
@@ -86,7 +86,7 @@ There are few demos, which can be run independently on each other (EG. Running D
 
 __2) No FAPI yet__
 
-2.a) In the `Client Registration` part, you can provide Initial access token from Keycloak (See above) and register some client. Can be for example
+2.a) In the `Client Registration` part, you can provide Initial access token from Keycloak (See above) and register some client by click button `Register client`. Can be for example
 public client (Switch `Client authentication method` can be switched to `none`)
 
 2.b) You can click `Create Login URL` and click `Login` . After user authentication, you will be redirected back to the application.
@@ -160,15 +160,19 @@ for the successful login.
 
 ### OID4VCI Demo
 
-NOTE: At the time of this writing, this is expected to be tested with Keycloak server 26.5.0.
+OID4VCI demo expects that server is started with the `--features=oid4vc-vci,oid4vc-vci-preauth-code` feature enabled.
+It is expected to do all the steps above from steps in "Pre-requisites", "Build this project", "Start and prepare Keycloak"
+and "Start example app and deploy the example". The additional steps are specific to OID4VCI
 
-OID4VCI demo expects that server is started with the `--features=oid4vc-vci` feature enabled.
+**NOTE:** The OID4VCI feature is still under development in Keycloak. So please note that this demo will also probably change
+in the future. Lots of the used flows might be done differently in the future.
 
-1) It is expected to import realm `test` from this directory with some pre-configured client scopes and stuff.
+1) It is expected to import realm `test` from this project with some pre-configured client scopes and stuff.
 Please login to the admin console, delete realm `test` (if you have existing realm from previous demos) and import realm
 from the file [oid4vci/singleFile-realm.json](oid4vci/singleFile-realm.json) .
 
-2) Go to http://localhost:8543 . Then copy/paste initial access token (see above for how to obtain it), register OIDC client (Tested with client authentication method `None`)
+2) Go to https://localhost:8543 (FAPI demo running on this URL). Then copy/paste initial access token (see above for how to obtain it), register OIDC client (Tested with client authentication method `None`).
+See above in the "FAPI 1 demo" section about the details on how to register client
 
 3) Go back to Keycloak admin console and lookup your newly registered client from the `test` realm.
 Manually update the client to:
@@ -180,38 +184,71 @@ client scopes `education-certificate` and `oid4vc_natural_person` to the client.
 4) In the demo application, obtain OID4VCI metadata (Button `Get OID4VCI metadata from well-known endpoint` in the OID4VCI section of the page) and make sure to
 select OID4VCI credential related to the client scope you assigned to the client in the previous step.
 
-5) Select some credential from `Credential Type` (ideally `Education Certificate`) and click `Credential issuance - Authorization code grant`
-and make sure that OID4VCI credential is successfully issued. See how OIDC authentication request with `Authorization details` will look like.
-And then click `Login` link at the bottom of the page
+#### Wallet initiated flow
 
-6) Login as `john` with `password` . It is needed to update `University` attribute in case
+This is the basic OID4VCI flow with "authorization code" grant without "credential offer", which means that the demo simulates "Wallet initiated flow".
+See the [OID4VCI specification](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) for the details about these terms.
+
+1) Select some credential from `OID4VCI Credential Type` (ideally `Education Certificate`) and click `Cred. issuance - Authorization code grant`.
+See how OIDC authentication request with `Authorization details` will look like. And then click `Login` link at the bottom of the page
+
+2) Login as `john` with `password` . It is needed to update `University` attribute in case
 you selected `Education Certificate` in previous step (you can use any random value as an university name). This is due the user-profile configuration
 and due the fact that `education-certificate` scope was added as a request parameter to OIDC authentication request together
 with authorization details
 
-7) Now you can click `Credential request`, which should fail as user missing the mandatory attribute `education-certificate-number`.
+3) Now you can click `Credential request`, which should fail as user missing the mandatory attribute `education-certificate-number`.
 
-8) In the other tab in the admin console, admin is able to manually update user `john` and fill the `Education certificate number` for him 
+4) In the other tab in the admin console, admin is able to manually update user `john` and fill the `Education certificate number` for him 
 (You can again use any number you prefer) and then save user.
 In reality, assumption is, that there should be some "business process" needed for this (EG. user `john` uploads his university
 diploma somewhere to be able to share it with the administrator)
 
-9) Go back to fapi-demo and click `Credential request` again. Now credential should be successfully issued for `john` .
+5) Go back to fapi-demo and click `Credential request` again. Now credential should be successfully issued for `john` .
 
-10) See button `Show last verifiable credential` to see the parsed sd-jwt data.
+6) See button `Show last verifiable credential` to see the parsed sd-jwt data.
  
-11) Then fill `Claims to present (divided by comma):`
+7) Then fill `Claims to present (divided by comma):`
 with some claims (EG. `university,firstName,lastName`) and click `Create presentation from last verifiable credential`.
 You can see sd-jwt with only subset of the claims.
 
-12) Change credential type to `oid4vc_natural_person` and fill `Username (for pre-authorized grant)` as `alice` . Now it is OK to
-send `Credential issuance - pre-authorized code` grant. See requests to observe the credential-offer and pre-authorized token
+#### Flow with pre-authorized grant and application-initiated action
+
+User authenticates with the "authorization code flow" to the portal application from where he can choose verifiable credential.
+Once user clicks on the credential, he is redirected to Keycloak, from where he eventually needs to re-authenticate and then the page
+with QR-code is displayed to him. He can then scan the credential to his wallet from there or copy it (if it is on same device like the browser
+where he authenticated).
+
+This fapi-playground uses simplified way as both "portal" and "wallet" are emulated by same playground application.
+
+Assumption is that user `john` has both attributes `University` and `Education certificate number` filled as described in previous demo.
+
+1) Once the `Education certificate` is selected as `Credential type` . Click on button `Action flow - credential offer displayed by Keycloak` and then click `Login` link at the bottom of the page
+You will see the page with credential-offer (possibly after re-authentication of user `john` with his password).
+
+2) Copy `Offer URL` link to your clipboard and click `Continue`
+
+3) After being redirected back to playground, you may fill the field `Credential offer (for pre-authorized grant with offer)` with the
+and paste the credential offer from your clipboard (It would be value similar to `openid-credential-offer://?credential_offer_uri=https%3A%2F%2Fas.keycloak-fapi.org%3A8443%2Frealms%2Ftest%2Fprotocol%2Foid4vc%2Fcredential-offer%2Fm6AKGyb8ZA7o6lTXPDlWVq-7kGvr6KDd8ztQB_cfAJSdi-Y2MxVQ2-9ninbrUiz9i71QKckH7l8i5U4_fduKFg`)
+
+4) Click button `Cred. issuance - pre-authorized code grant (with offer)` .
+
+5) Repeat steps 5, 6, 7 from previous demo (Wallet initiated flow demo) and observe new credential for user `john`
+
+#### Flow with pre-authorized grant and offer created by sending request to custom REST endpoint
+
+1) Pre-authorized code obtained by "administrator" sending request to the REST endpoint, which creates credential-offer for target user. 
+
+**NOTE:** This might not be supported in the future in a way currently done in this demo.
+
+2) Change credential type to `oid4vc_natural_person` and fill `Username (for pre-authorized grant with REST)` as `alice` . Now it is OK to
+send `Cred. issuance - pre-authorized code grant (REST endpoint flow)` grant. See requests to observe the credential-offer and pre-authorized token
 obtained for `alice` .
 **NOTE 1:** user `john` can obtain credential-offer for `alice` as he has role `credential-offer-create`).
 **NOTE 2:** Not sure if this flow would still work in later Keycloak versions in a way shown in this demo. See discussion https://github.com/keycloak/keycloak/discussions/44764
 for the details.
 
-13) Repeat steps 9, 10, 11 and observe new `oid4vc_natural_person` VC for alice
+3) Repeat steps 5, 6, 7 from "Wallet initiated flow demo" and observe new `oid4vc_natural_person` VC for alice
 
 
 ## Test with latest Keycloak nightly 
@@ -240,10 +277,15 @@ Possible contribution tips:
 
 2) Update to newer version of Keycloak (might need to update dependencies in `pom.xml`. Maybe code as well if something changed)
 
-3) Add some other FAPI/OAuth/OIDC related functionality to this demo (EG. OIDC4VCI or something else)
+3) Add some other FAPI/OAuth/OIDC related functionality to this demo
 
 4) Cleanup. There are lots of TODOs in the codebase. Also maybe UI can be improved. The README instructions can be possibly improved and made more clear as well.
 Feel free to create GH issue at least if you find the trouble, but PR with contribution is welcome even more!
+
+5) OID4VCI demo improvement - Other things to add might be:
+- Cleanup existing stuff and make it more user friendly (there is likely too much buttons and is hard to use)
+- Key-binding and proofs support for SD-JWT credential 
+- Integrate with real wallets (instead of need to copy/paste the `Credential offer` manually to this FAPI playground)
 
 (See above for potential contributions tips and also search for `TODO:` in the code :-) )
 

@@ -15,7 +15,7 @@ import java.util.function.Consumer;
 
 public class LoginUtil {
 
-    public static String getAuthorizationRequestUrl(OIDCFlowConfigContext oidcFlowCtx, UriInfo uriInfo, String scope) {
+    public static LoginUrlBuilder getAuthorizationRequestUrl(OIDCFlowConfigContext oidcFlowCtx, UriInfo uriInfo, String scope) {
         OAuthClient oauthClient = Services.instance().getOauthClient();
         SessionData session = Services.instance().getSession();
 
@@ -42,10 +42,10 @@ public class LoginUtil {
                     .request(request)
                     .nonce(null)
                     .state(null)
-                    .dpopJkt(dpopJkt)
+                    .dpopJkt(dpopJkt);
 //                        .responseType(null);
                     // oauthClient.responseMode("query");
-                    .build();
+
         } else {
             LoginUrlBuilder loginUrl = oauthClient//.client(oidcClient.getClientId()) - Already set after client registration
                     .responseType(OAuth2Constants.CODE)
@@ -65,7 +65,7 @@ public class LoginUtil {
             }
             loginUrl.dpopJkt(dpopJkt);
 
-            return loginUrl.build();
+            return loginUrl;
         }
     }
 

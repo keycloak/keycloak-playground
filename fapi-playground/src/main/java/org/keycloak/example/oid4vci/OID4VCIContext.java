@@ -1,11 +1,7 @@
 package org.keycloak.example.oid4vci;
 
 import org.jboss.logging.Logger;
-import org.keycloak.protocol.oid4vc.issuance.OID4VCAuthorizationDetailsResponse;
-import org.keycloak.protocol.oid4vc.model.CredentialIssuer;
-import org.keycloak.protocol.oid4vc.model.CredentialOfferURI;
-import org.keycloak.protocol.oid4vc.model.CredentialResponse;
-import org.keycloak.protocol.oid4vc.model.CredentialsOffer;
+import org.keycloak.protocol.oid4vc.model.*;
 
 import java.util.Collections;
 import java.util.List;
@@ -21,12 +17,13 @@ public class OID4VCIContext {
     private String claimsToPresent;
     private String preauthzClientId;
     private String preauthzUsername;
+    private String preauthzOffer;
 
     // Obtained from requests
     private CredentialIssuer credentialIssuerMetadata;
     private CredentialOfferURI credentialOfferURI;
     private CredentialsOffer credentialsOffer;
-    private OID4VCAuthorizationDetailsResponse authzDetails;
+    private OID4VCAuthorizationDetail authzDetails;
     private CredentialResponse credentialResponse;
     private String accessToken;
 
@@ -62,6 +59,14 @@ public class OID4VCIContext {
         this.preauthzUsername = preauthzUsername;
     }
 
+    public String getPreauthzOffer() {
+        return preauthzOffer;
+    }
+
+    public void setPreauthzOffer(String preauthzOffer) {
+        this.preauthzOffer = preauthzOffer;
+    }
+
     public List<OID4VCCredential> getAvailableCredentials() {
         return availableCredentials;
     }
@@ -94,11 +99,11 @@ public class OID4VCIContext {
         this.credentialsOffer = credentialsOffer;
     }
 
-    public OID4VCAuthorizationDetailsResponse getAuthzDetails() {
+    public OID4VCAuthorizationDetail getAuthzDetails() {
         return authzDetails;
     }
 
-    public void setAuthzDetails(OID4VCAuthorizationDetailsResponse authzDetails) {
+    public void setAuthzDetails(OID4VCAuthorizationDetail authzDetails) {
         this.authzDetails = authzDetails;
     }
 
@@ -124,6 +129,12 @@ public class OID4VCIContext {
         authzDetails = null;
         credentialResponse = null;
         accessToken = null;
+
+        // Cleanup also some config
+        claimsToPresent = null;
+        preauthzClientId = null;
+        preauthzUsername = null;
+        preauthzOffer = null;
     }
 
     public static class OID4VCCredential {

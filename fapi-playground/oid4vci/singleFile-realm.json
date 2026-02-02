@@ -659,7 +659,8 @@
     "realmRoles" : [ "credential-offer-create" ],
     "clientRoles" : {
       "test-app" : [ "testRole" ],
-      "account" : [ "view-profile", "manage-account" ]
+      "account" : [ "view-profile", "manage-account" ],
+      "realm-management" : [ "realm-admin" ]
     },
     "notBefore" : 0,
     "groups" : [ ]
@@ -3321,6 +3322,14 @@
     "priority" : 130,
     "config" : { }
   }, {
+    "alias" : "verifiable_credential_offer",
+    "name" : "Verifiable Credential Offer",
+    "providerId" : "verifiable_credential_offer",
+    "enabled" : true,
+    "defaultAction" : false,
+    "priority" : 200,
+    "config" : { }
+  }, {
     "alias" : "update_user_locale",
     "name" : "Update User Locale",
     "providerId" : "update_user_locale",
@@ -3346,12 +3355,14 @@
     "cibaInterval" : "5",
     "realmReusableOtpCode" : "false",
     "cibaExpiresIn" : "120",
+    "vc.c-nonce-lifetime-seconds" : "900",
     "oauth2DeviceCodeLifespan" : "600",
     "saml.signature.algorithm" : "",
     "parRequestUriLifespan" : "60",
     "clientSessionMaxLifespan" : "0",
     "frontendUrl" : "",
-    "acr.loa.map" : "{}"
+    "acr.loa.map" : "{}",
+    "preAuthorizedCodeLifespanS" : "900"
   },
   "keycloakVersion" : "999.0.0-SNAPSHOT",
   "userManagedAccessAllowed" : false,
