@@ -37,12 +37,24 @@ trust manager as currently the SPIFFE servers certificate is not been added to t
 To run Keycloak with the required configuration run the script `start-keycloak.sh`. This will download and start
 Keycloak with the required configuration.
 
+```shell
+./start-keycloak.sh
+```
+
+Once Keycloak is started, you can log in at http://localhost:8080/ with the username `admin` and the password `admin`.
+
 ## Configuring Keycloak
 
 The demo requires setting up a realm in Keycloak, with a Kubernetes identity provider, and a client configured to
 use Kubernetes service accounts for authentication.
 
 This can be created by running `configure-keycloak.sh`.
+
+```shell
+./configure-keycloak.sh
+```
+
+This sets up a new realm `spiffe` with a client `myclient` and an identity provider `spiffe`. 
 
 ## Try it out
 
