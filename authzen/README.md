@@ -1,6 +1,6 @@
 # Keycloak AuthZEN Demo
 
-This demo shows how Keycloak can act as an [AuthZEN](https://openid.net/specs/openid-authzen-authorization-api-1_0.html) Policy Decision Point (PDP), exposing its authorization capabilities through the AuthZEN Evaluation and Evaluations API.
+This demo shows how Keycloak can act as an [AuthZEN](https://openid.net/specs/authorization-api-1_0.html) Policy Decision Point (PDP), exposing its authorization capabilities through the AuthZEN Evaluation and Evaluations API.
 
 The demo sets up a simple todo application scenario using role-based access control. Two users are created: Rick (admin) who can read and create todos, and Jerry (viewer) who can only read them. The AuthZEN API is then used to evaluate authorization decisions for these users.
 
