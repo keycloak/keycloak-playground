@@ -4,8 +4,9 @@ umask 077
 
 # Read only the local SPIRE server; SPIRE handles federation with other domains.
 spire() {
-  kubectl --context k3d-kc-spiffe-east --request-timeout=10s -n spire exec spire-server-0 -c spire-server -- /opt/spire/bin/spire-server "$@"
+  .runtime/spire/bin/spire-server "$@" -socketPath "$PWD/.runtime/east/server.sock"
 }
+
 
 bundle_map() {
   local map domains domain bundle
@@ -17,7 +18,7 @@ bundle_map() {
     if type == "string" and length > 0 then . else error("Invalid trust domain") end') || return
   while IFS= read -r domain; do
     case "$domain" in ""|east.example.test) continue ;; esac
-    bundle=$(spire bundle list -id "$domain" -format spiffe | jq -ce 'select(type == "object" and (.keys | type == "array"))') || return
+    bundle=$(spire bundle list -id "spiffe://$domain" -format spiffe | jq -ce 'select(type == "object" and (.keys | type == "array"))') || return
     map=$(jq -c --arg domain "$domain" --argjson bundle "$bundle" '.trust_domains[$domain] = $bundle' <<< "$map")
   done <<< "$domains"
   printf '%s\n' "$map"
@@ -29,7 +30,6 @@ if [ "${BASH_SOURCE[0]}" != "$0" ]; then
 fi
 
 cd "$(dirname "$0")"
-export KUBECONFIG="$PWD/.runtime/kc-spiffe-east.kubeconfig:$PWD/.runtime/kc-spiffe-west.kubeconfig"
 RUNTIME="$PWD/.runtime"
 mkdir -p "$RUNTIME/public"
 rm -f "$RUNTIME/public/bundle" "$RUNTIME/last-refresh"
@@ -69,7 +69,7 @@ echo "---------------------------------------"
 echo "Serve the SPIFFE bundle map over HTTPS"
 echo "---------------------------------------"
 
-# Serve only public bundles, never certificates, private keys or kubeconfigs.
+# Serve only public bundles, never certificates, private keys.
 cd "$RUNTIME/public"
 openssl s_server -quiet -WWW -accept 127.0.0.1:9443 \
   -cert "$RUNTIME/demo-map.crt" -key "$RUNTIME/demo-map.key" &

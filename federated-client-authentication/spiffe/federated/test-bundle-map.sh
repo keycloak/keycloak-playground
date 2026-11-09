@@ -9,8 +9,8 @@ spire() {
   case "$*" in
     'bundle show -format spiffe') printf '%s\n' "$local_bundle" ;;
     'bundle list -output json') printf '%s\n' "$remote_domains" ;;
-    'bundle list -id west.example.test -format spiffe') echo '{"keys":[{"kid":"west"}]}' ;;
-    'bundle list -id third.example.test -format spiffe') echo '{"keys":[{"kid":"third"}]}' ;;
+    'bundle list -id spiffe://west.example.test -format spiffe') echo '{"keys":[{"kid":"west"}]}' ;;
+    'bundle list -id spiffe://third.example.test -format spiffe') echo '{"keys":[{"kid":"third"}]}' ;;
     *) return 1 ;;
   esac
 }
